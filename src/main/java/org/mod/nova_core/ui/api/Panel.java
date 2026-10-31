@@ -1,7 +1,7 @@
 package org.mod.nova_core.ui.api;
 
-import net.minecraft.client.gui.GuiGraphics;
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.graphics.UiGraphics;
 
 // Прямоугольник с фоном и рамкой / Rectangle with background and border
 public class Panel extends Widget {
@@ -19,7 +19,7 @@ public class Panel extends Widget {
     public Panel setBorderWidth(int borderWidth) { this.borderWidth = borderWidth; return this; }
 
     @Override
-    protected void renderSelf(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         int ax = absX();
         int ay = absY();
         int w = getWidth();

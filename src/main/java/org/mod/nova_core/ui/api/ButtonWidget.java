@@ -1,15 +1,15 @@
 package org.mod.nova_core.ui.api;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
-import org.lwjgl.glfw.GLFW;
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.context.UiContext;
+import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.graphics.UiGraphics;
+import org.mod.nova_core.ui.graphics.UiText;
+import org.mod.nova_core.ui.input.Keys;
+import org.mod.nova_core.ui.input.MouseButton;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.Size;
+import org.mod.nova_core.ui.layout.SizeMode;
 
 // Кнопка: срабатывает при отпускании ЛКМ над ней, а также по Enter/Space в фокусе
 // Button: fires when LMB is released over it, and on Enter/Space while focused
@@ -23,21 +23,27 @@ public class ButtonWidget extends Widget {
     private static final int TEXT_NORMAL = 0xFFE0E0E0;
     private static final int TEXT_DISABLED = 0xFF808080;
 
-    private Component label;
+    private UiText label;
     private Runnable onClick;
     private boolean playSound = true;
 
     // Нажата ли кнопка мышью сейчас / Is the mouse button currently held on it
     private boolean pressedState = false;
 
-    public ButtonWidget(int x, int y, int width, int height, Component label, Runnable onClick) {
+    public ButtonWidget(int x, int y, int width, int height, UiText label, Runnable onClick) {
         super(x, y, width, height);
         this.label = label;
         this.onClick = onClick;
     }
 
-    public Component getLabel() { return label; }
-    public ButtonWidget setLabel(Component label) { this.label = label; return this; }
+    public UiText getLabel() { return label; }
+
+    public ButtonWidget setLabel(UiText label) {
+        this.label = label;
+        if (getWidthMode() == SizeMode.WRAP) requestLayout();
+        return this;
+    }
+
     public ButtonWidget setOnClick(Runnable onClick) { this.onClick = onClick; return this; }
     public ButtonWidget setPlaySound(boolean playSound) { this.playSound = playSound; return this; }
 
@@ -47,15 +53,17 @@ public class ButtonWidget extends Widget {
     // Программное нажатие / Programmatic press
     public void activate() {
         if (!isActive()) return;
-        if (playSound) {
-            Minecraft.getInstance().getSoundManager()
-                    .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-        }
+        if (playSound) UiContext.platform().playClickSound();
         onClick.run();
     }
 
     @Override
-    protected void renderSelf(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected Size measureContent(Constraints c) {
+        return new Size(UiContext.platform().textWidth(label) + 16, 20);
+    }
+
+    @Override
+    protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         int ax = absX();
         int ay = absY();
         int w = getWidth();
@@ -73,22 +81,22 @@ public class ButtonWidget extends Widget {
         g.fill(ax, ay, ax + w, ay + h, border);
         g.fill(ax + 1, ay + 1, ax + w - 1, ay + h - 1, bg);
 
-        Font font = Minecraft.getInstance().font;
-        int tx = ax + (w - font.width(label)) / 2;
-        int ty = ay + (h - font.lineHeight) / 2;
-        g.drawString(font, label, tx, ty, isActive() ? TEXT_NORMAL : TEXT_DISABLED, true);
+        UiPlatform p = UiContext.platform();
+        int tx = ax + (w - p.textWidth(label)) / 2;
+        int ty = ay + (h - p.lineHeight()) / 2;
+        g.drawText(label, tx, ty, isActive() ? TEXT_NORMAL : TEXT_DISABLED, true);
     }
 
     @Override
     protected boolean onMouseClicked(double mx, double my, int button) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (button != MouseButton.LEFT) return false;
         pressedState = true;
         return true;
     }
 
     @Override
     public boolean onMouseReleased(double mx, double my, int button) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) return false;
+        if (button != MouseButton.LEFT) return false;
         boolean wasPressed = pressedState;
         pressedState = false;
         // Срабатываем, только если отпустили над кнопкой / Fire only if released over the button
@@ -97,14 +105,8 @@ public class ButtonWidget extends Widget {
     }
 
     @Override
-    protected Size measureContent(Constraints c) {
-        Font font = Minecraft.getInstance().font;
-        return new Size(font.width(label) + 16, 20);
-    }
-
-    @Override
     public boolean onKeyPressed(int key, int scanCode, int modifiers) {
-        if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER || key == GLFW.GLFW_KEY_SPACE) {
+        if (key == Keys.ENTER || key == Keys.KP_ENTER || key == Keys.SPACE) {
             activate();
             return true;
         }

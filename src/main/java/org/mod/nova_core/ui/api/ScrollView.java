@@ -1,8 +1,9 @@
 package org.mod.nova_core.ui.api;
 
-import net.minecraft.client.gui.GuiGraphics;
 import org.lwjgl.glfw.GLFW;
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.graphics.UiGraphics;
+import org.mod.nova_core.ui.input.MouseButton;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.Size;
 
@@ -107,7 +108,7 @@ public class ScrollView extends Widget {
     // ---------- Отрисовка / Rendering ----------
 
     @Override
-    protected void renderOverlay(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected void renderOverlay(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         if (getMaxScroll() <= 0) return;
 
         int left = absX() + getWidth() - scrollbarWidth;
@@ -127,7 +128,7 @@ public class ScrollView extends Widget {
 
     @Override
     protected boolean onMouseClicked(double mx, double my, int button) {
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT || getMaxScroll() <= 0 || !inScrollbar(mx)) return false;
+        if (button != MouseButton.LEFT || getMaxScroll() <= 0 || !inScrollbar(mx)) return false;
 
         int ty = absY() + thumbTop();
         int th = thumbHeight();

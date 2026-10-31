@@ -1,6 +1,6 @@
 package org.mod.nova_core.ui.component;
 
-import net.minecraft.client.gui.GuiGraphics;
+import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.Insets;
 import org.mod.nova_core.ui.layout.Size;
@@ -246,20 +246,22 @@ public class Widget {
 
     // ---------- Отрисовка / Rendering ----------
 
-    public final void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    // ---------- Отрисовка / Rendering ----------
+
+    public final void render(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         if (!visible) return;
         renderSelf(g, mouseX, mouseY, partialTick);
-        if (clipChildren) g.enableScissor(absX(), absY(), absX() + width, absY() + height);
+        if (clipChildren) g.pushClip(absX(), absY(), absX() + width, absY() + height);
         for (Widget c : children) c.render(g, mouseX, mouseY, partialTick);
-        if (clipChildren) g.disableScissor();
+        if (clipChildren) g.popClip();
         renderOverlay(g, mouseX, mouseY, partialTick);
     }
 
     // Рисует сам виджет, без детей / Draws the widget itself, without children
-    protected void renderSelf(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
+    protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     // Рисуется поверх детей и вне обрезки / Drawn above children and outside the clip
-    protected void renderOverlay(GuiGraphics g, int mouseX, int mouseY, float partialTick) {}
+    protected void renderOverlay(UiGraphics g, int mouseX, int mouseY, float partialTick) {}
 
     // ---------- Диспетчеризация мыши через дерево / Mouse dispatch through the tree ----------
     // Дети проверяются с конца: верхний слой первым / Children checked in reverse: top layer first

@@ -7,15 +7,24 @@ import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
+import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.minecraft.DemoScreen;
+import org.mod.nova_core.ui.minecraft.McPlatform;
 
+@Mod.EventBusSubscriber(modid = Nova_core.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class NovaCoreClient {
     // Создаётся сразу / Created eagerly
     public static final KeyMapping OPEN_DEMO = new KeyMapping(
             "key.nova_core.open_demo", GLFW.GLFW_KEY_K, "key.categories.nova_core");
 
     private NovaCoreClient() {}
+
+    @SubscribeEvent
+    public static void onClientSetup(FMLClientSetupEvent event) {
+        UiContext.install(new McPlatform());
+    }
 
     // Шина мода: регистрация клавиши / Mod bus: key registration
     @Mod.EventBusSubscriber(modid = "nova_core", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)

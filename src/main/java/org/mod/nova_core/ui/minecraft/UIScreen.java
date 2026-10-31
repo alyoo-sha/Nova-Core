@@ -9,6 +9,8 @@ import org.mod.nova_core.ui.layout.Constraints;
 public abstract class UIScreen extends Screen {
     // Корень дерева, создаётся сразу / Tree root, created eagerly
     protected final Widget root = new Widget(0, 0, 0, 0);
+    // Один объект рисования на экран, на кадр подставляется GuiGraphics / One graphics object per screen, GuiGraphics is attached per frame
+    private final McGraphics graphics = new McGraphics();
 
     // Виджет, получивший нажатие: ему идут drag/release / Widget that took the press: gets drag/release
     private Widget pressed = null;
@@ -33,7 +35,9 @@ public abstract class UIScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
-        root.render(g, mouseX, mouseY, partialTick);
+        graphics.begin(g);
+        root.render(graphics, mouseX, mouseY, partialTick);
+        graphics.end();
     }
 
     @Override

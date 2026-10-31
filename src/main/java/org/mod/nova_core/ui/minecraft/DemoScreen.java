@@ -3,13 +3,12 @@ package org.mod.nova_core.ui.minecraft;
 import net.minecraft.network.chat.Component;
 import org.mod.nova_core.ui.api.*;
 import org.mod.nova_core.ui.component.Widget;
-import org.mod.nova_core.ui.layout.Alignment;
-import org.mod.nova_core.ui.layout.Insets;
-import org.mod.nova_core.ui.layout.SizeMode;
+import org.mod.nova_core.ui.graphics.UiText;
+import org.mod.nova_core.ui.layout.*;
 
 public class DemoScreen extends UIScreen {
     private int clicks = 0;
-    
+
     public DemoScreen() {
         super(Component.literal("Nova Core demo"));
     }
@@ -22,9 +21,9 @@ public class DemoScreen extends UIScreen {
         stack.setSizeMode(SizeMode.FILL, SizeMode.FILL);
         stack.setPadding(Insets.all(10)).setGap(6).setAlignment(Alignment.STRETCH);
 
-        TextWidget title = new TextWidget(0, 0, 0, 12, Component.literal("Nova Core"))
+        TextWidget title = new TextWidget(0, 0, 0, 12, UiText.literal("Nova Core"))
                 .setAlignment(Alignment.CENTER);
-        TextWidget counter = new TextWidget(0, 0, 0, 12, Component.literal("Clicks: 0"))
+        TextWidget counter = new TextWidget(0, 0, 0, 12, UiText.literal("Clicks: 0"))
                 .setAlignment(Alignment.CENTER);
 
         // Пустой виджет с весом забирает всё свободное место / An empty widget with weight takes all free space
@@ -33,10 +32,10 @@ public class DemoScreen extends UIScreen {
 
         HStack row = new HStack(0, 0, 0, 20);
         row.setGap(6);
-        ButtonWidget plus = new ButtonWidget(0, 0, 0, 20, Component.literal("+1"),
-                () -> counter.setText(Component.literal("Clicks: " + (++clicks))));
-        ButtonWidget reset = new ButtonWidget(0, 0, 0, 20, Component.literal("Reset"),
-                () -> { clicks = 0; counter.setText(Component.literal("Clicks: 0")); });
+        ButtonWidget plus = new ButtonWidget(0, 0, 0, 20, UiText.literal("+1"),
+                () -> counter.setText(UiText.literal("Clicks: " + (++clicks))));
+        ButtonWidget reset = new ButtonWidget(0, 0, 0, 20, UiText.literal("Reset"),
+                () -> { clicks = 0; counter.setText(UiText.literal("Clicks: 0")); });
         plus.setWeight(1f);
         reset.setWeight(1f);
         row.add(plus);
