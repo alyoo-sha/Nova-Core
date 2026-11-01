@@ -1,0 +1,14 @@
+{
+  "key.categories.nova_core": "Nova Core",
+  "key.nova_core.open_demo": "Open demo screen",
+  "key.nova_core.open_scroll_demo": "Open scroll demo",
+  "key.nova_core.open_state_demo": "Open state demo",
+  "key.nova_core.open_animation_demo": "Open animation demo",
+  "key.nova_core.open_overlay_demo": "Open overlay demo",
+  "key.nova_core.open_controls_demo": "Open controls demo",
+  "key.nova_core.open_collections_demo": "Open collections demo",
+  "key.nova_core.open_dnd_demo": "Open drag and drop demo",
+  "key.nova_core.open_form_demo": "Open form demo",
+  "menu.nova_core.workbench": "Workbench",
+  "menu.nova_core.workbench.clear": "Clear"
+}

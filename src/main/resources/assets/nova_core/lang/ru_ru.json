@@ -1,0 +1,14 @@
+{
+  "key.categories.nova_core": "Nova Core",
+  "key.nova_core.open_demo": "Открыть демо-экран",
+  "key.nova_core.open_scroll_demo": "Открыть демо прокрутки",
+  "key.nova_core.open_state_demo": "Открыть демо состояния",
+  "key.nova_core.open_animation_demo": "Открыть демо анимации",
+  "key.nova_core.open_overlay_demo": "Открыть демо оверлеев",
+  "key.nova_core.open_controls_demo": "Открыть демо элементов управления",
+  "key.nova_core.open_collections_demo": "Открыть демо коллекций",
+  "key.nova_core.open_dnd_demo": "Открыть демо перетаскивания",
+  "key.nova_core.open_form_demo": "Открыть демо формы",
+  "menu.nova_core.workbench": "Верстак",
+  "menu.nova_core.workbench.clear": "Очистить"
+}

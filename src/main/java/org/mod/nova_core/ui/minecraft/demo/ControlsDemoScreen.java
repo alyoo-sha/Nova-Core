@@ -78,7 +78,7 @@ public class ControlsDemoScreen extends UIScreen {
         spacer.setWeight(1f);
 
         ButtonWidget theme = new ButtonWidget(0, 0, 0, 20, UiText.literal("Theme"),
-                () -> ThemeManager.set(ThemeManager.current() == Themes.DARK ? Themes.LIGHT : Themes.DARK));
+                ThemeManager::cycle);
 
         stack.add(title);
         stack.add(field);

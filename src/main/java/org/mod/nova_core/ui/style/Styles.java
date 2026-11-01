@@ -19,6 +19,8 @@ public final class Styles {
     // Непрозрачная поверхность для попапов, меню и диалогов / An opaque surface for popups, menus and dialogs
     public static final StyleKey<PanelStyle> POPUP =
             StyleKey.of("nova_core:popup", PanelStyle.class, new PanelStyle(0xFF181818, 0xFF505050, 1));
+    public static final StyleKey<SlotStyle> SLOT =
+            StyleKey.of("nova_core:slot", SlotStyle.class, SlotStyle.DEFAULT);
 
     private Styles() {}
 }

@@ -3,6 +3,7 @@ package org.mod.nova_core.ui.overlay;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.graphics.Draw;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.layout.Constraints;
@@ -51,8 +52,7 @@ public final class TooltipBubble extends Widget {
         TooltipStyle s = style.get();
         int ax = absX();
         int ay = absY();
-        g.fill(ax, ay, ax + getWidth(), ay + getHeight(), s.border());
-        g.fill(ax + 1, ay + 1, ax + getWidth() - 1, ay + getHeight() - 1, s.background());
+        Draw.box(g, ax, ay, getWidth(), getHeight(), s.radius(), s.background(), s.border(), 1);
         g.drawText(text, ax + s.paddingX(), ay + s.paddingY(), s.text(), s.textShadow());
     }
 }

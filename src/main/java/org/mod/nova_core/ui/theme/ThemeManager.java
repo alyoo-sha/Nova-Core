@@ -8,7 +8,7 @@ import java.util.Objects;
 // Текущая тема приложения; хранится в Signal, поэтому на неё можно подписываться
 // The application's current theme; stored in a Signal, so it can be observed
 public final class ThemeManager {
-    private static final Signal<Theme> CURRENT = Signal.of(Themes.DARK);
+    private static final Signal<Theme> CURRENT = Signal.of(Themes.GLASS);
 
     private ThemeManager() {}
 
@@ -18,5 +18,10 @@ public final class ThemeManager {
 
     public static void set(Theme theme) {
         CURRENT.set(Objects.requireNonNull(theme));
+    }
+
+    // Переключить на следующую встроенную тему / Switch to the next built-in theme
+    public static void cycle() {
+        set(Themes.next(current()));
     }
 }

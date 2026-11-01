@@ -8,6 +8,7 @@ import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
 import org.mod.nova_core.ui.debug.WidgetInfo;
+import org.mod.nova_core.ui.graphics.Draw;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.input.KeyboardEvent;
@@ -110,8 +111,7 @@ public class ButtonWidget extends Widget {
 
         int border = isFocused() ? s.focusedBorder() : s.border();
 
-        g.fill(ax, ay, ax + w, ay + h, border);
-        g.fill(ax + 1, ay + 1, ax + w - 1, ay + h - 1, bg.peek());
+        Draw.box(g, ax, ay, w, h, s.radius(), bg.peek(), border, 1);
 
         UiPlatform p = UiContext.platform();
         int tx = ax + (w - p.textWidth(label)) / 2;

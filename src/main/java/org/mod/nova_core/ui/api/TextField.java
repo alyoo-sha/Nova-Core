@@ -3,6 +3,7 @@ package org.mod.nova_core.ui.api;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.graphics.Draw;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.input.KeyboardEvent;
@@ -237,8 +238,7 @@ public class TextField extends Widget {
         int h = getHeight();
         boolean focused = isFocused();
 
-        g.fill(ax, ay, ax + w, ay + h, focused ? s.focusedBorder() : s.border());
-        g.fill(ax + 1, ay + 1, ax + w - 1, ay + h - 1, s.background());
+        Draw.box(g, ax, ay, w, h, s.radius(), s.background(), focused ? s.focusedBorder() : s.border(), 1);
 
         UiPlatform p = UiContext.platform();
         int left = innerLeft();
@@ -357,4 +357,7 @@ public class TextField extends Widget {
         resetBlink();
         if (!focused) dragging = false;
     }
+
+    @Override
+    public boolean isTextInput() { return true; }
 }

@@ -99,11 +99,13 @@ public class Slider extends Widget {
         int thumbX = ax + Math.round(fraction() * travel);
         int thumbY = ay + (h - s.thumbHeight()) / 2;
 
-        g.fill(ax, trackY, ax + w, trackY + s.trackHeight(), s.track());
-        g.fill(ax, trackY, thumbX + s.thumbWidth() / 2, trackY + s.trackHeight(), s.fill());
+        g.fillRounded(ax, trackY, ax + w, trackY + s.trackHeight(), s.radius(), s.track());
+        g.fillRounded(ax, trackY, thumbX + s.thumbWidth() / 2, trackY + s.trackHeight(), s.radius(),
+                s.fill());
 
         boolean lit = dragging || isFocused() || (isActive() && isHovered());
-        g.fill(thumbX, thumbY, thumbX + s.thumbWidth(), thumbY + s.thumbHeight(), lit ? s.thumbHover() : s.thumb());
+        g.fillRounded(thumbX, thumbY, thumbX + s.thumbWidth(), thumbY + s.thumbHeight(), s.radius(),
+                lit ? s.thumbHover() : s.thumb());
     }
 
     @Override

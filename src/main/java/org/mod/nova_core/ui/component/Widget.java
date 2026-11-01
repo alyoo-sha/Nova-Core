@@ -74,6 +74,9 @@ public class Widget implements EventTarget {
     // Используется только у корня: кто сейчас в фокусе / Used on the root only: who currently has focus
     private Widget focusOwner = null;
 
+    // Слушатели смены фокуса, например чтобы пометить поле формы «тронутым» / Focus change listeners, e.g. to mark a form field "touched"
+    private final List<Consumer<Boolean>> focusListeners = new ArrayList<>();
+
     public Widget(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
@@ -441,6 +444,19 @@ public class Widget implements EventTarget {
     // Может ли виджет получать фокус клавиатуры / Can this widget take keyboard focus
     public boolean isFocusable() { return false; }
 
+    public final void addFocusListener(Consumer<Boolean> listener) {
+        focusListeners.add(listener);
+    }
+
+    private void notifyFocus(boolean focused) {
+        onFocusChanged(focused);
+        for (int i = 0; i < focusListeners.size(); i++) focusListeners.get(i).accept(focused);
+    }
+
+    // true у полей ввода: пока они в фокусе, остальные клавиши (например, E в инвентаре) не доходят до экрана
+    // true for text inputs: while focused, other keys (e.g. E in an inventory) never reach the screen
+    public boolean isTextInput() { return false; }
+
     // Виджет в фокусе всего дерева / Focused widget of the whole tree
     public Widget getFocusOwner() { return root().focusOwner; }
 
@@ -466,11 +482,11 @@ public class Widget implements EventTarget {
         focusOwner = next;
         if (old != null) {
             old.focused = false;
-            old.onFocusChanged(false);
+            old.notifyFocus(false);
         }
         if (next != null) {
             next.focused = true;
-            next.onFocusChanged(true);
+            next.notifyFocus(true);
         }
     }
 

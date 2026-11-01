@@ -36,7 +36,7 @@ public class DemoScreen extends UIScreen {
     protected void build(Widget root) {
         Panel panel = new Panel((root.getWidth() - 200) / 2, (root.getHeight() - 110) / 2, 200, 110);
         ButtonWidget themeButton = new ButtonWidget(0, 0, 0, 20, UiText.literal("Theme"),
-                () -> ThemeManager.set(ThemeManager.current() == Themes.DARK ? Themes.LIGHT : Themes.DARK));
+                ThemeManager::cycle);
 
         VStack stack = new VStack(0, 0, 0, 0);
         stack.setSizeMode(SizeMode.FILL, SizeMode.FILL);

@@ -173,13 +173,13 @@ public class ScrollView extends Widget {
         int right = absX() + getWidth();
         int top = absY();
 
-        g.fill(left, top, right, top + getHeight(), s.track());
+        g.fillRounded(left, top, right, top + getHeight(), s.radius(), s.track());
 
         int ty = top + thumbTop();
         int th = thumbHeight();
         boolean hovered = dragging
                 || (inScrollbar(mouseX) && mouseY >= ty && mouseY < ty + th);
-        g.fill(left, ty, right, ty + th, hovered ? s.thumbHover() : s.thumb());
+        g.fillRounded(left, ty, right, ty + th, s.radius(), hovered ? s.thumbHover() : s.thumb());
     }
 
     // ---------- События / Events ----------

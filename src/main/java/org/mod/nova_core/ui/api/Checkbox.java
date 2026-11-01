@@ -3,6 +3,7 @@ package org.mod.nova_core.ui.api;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.graphics.Draw;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.input.KeyboardEvent;
@@ -100,9 +101,9 @@ public class Checkbox extends Widget {
         else bg = s.normal();
         int markColor = isActive() ? s.text() : s.disabledText();
 
-        g.fill(ax, boxY, ax + BOX, boxY + BOX, isFocused() ? s.focusedBorder() : s.border());
-        g.fill(ax + 1, boxY + 1, ax + BOX - 1, boxY + BOX - 1, bg);
-        if (checked.peek()) g.fill(ax + 3, boxY + 3, ax + BOX - 3, boxY + BOX - 3, markColor);
+        Draw.box(g, ax, boxY, BOX, BOX, Math.min(s.radius(), 3), bg,
+                isFocused() ? s.focusedBorder() : s.border(), 1);
+        if (checked.peek()) g.fillRounded(ax + 3, boxY + 3, ax + BOX - 3, boxY + BOX - 3, Math.min(s.radius(), 1), markColor);
 
         int textY = absY() + (getHeight() - p.lineHeight()) / 2;
         g.drawText(label, ax + BOX + GAP, textY, markColor, s.textShadow());
