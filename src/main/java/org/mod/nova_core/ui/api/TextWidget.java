@@ -3,18 +3,25 @@ package org.mod.nova_core.ui.api;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.debug.WidgetInfo;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.layout.Alignment;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.Size;
 import org.mod.nova_core.ui.layout.SizeMode;
+import org.mod.nova_core.ui.state.ReadableSignal;
+import org.mod.nova_core.ui.style.Styles;
+import org.mod.nova_core.ui.style.TextStyle;
+import org.mod.nova_core.ui.theme.StyleRef;
+
+import java.util.List;
 
 // Однострочный текст / Single-line text
 public class TextWidget extends Widget {
+    private final StyleRef<TextStyle> style = new StyleRef<>(Styles.TEXT);
+
     private UiText text;
-    private int color = 0xFFFFFFFF;
-    private boolean shadow = true;
     // По горизонтали: START, CENTER, END (STRETCH = START) / Horizontal: START, CENTER, END (STRETCH = START)
     private Alignment alignment = Alignment.START;
 
@@ -39,9 +46,28 @@ public class TextWidget extends Widget {
         return this;
     }
 
-    public TextWidget setColor(int argb) { this.color = argb; return this; }
-    public TextWidget setShadow(boolean shadow) { this.shadow = shadow; return this; }
-    public TextWidget setAlignment(Alignment alignment) { this.alignment = alignment; return this; }
+    // Текст берётся из сигнала, пока виджет смонтирован / The text comes from a signal while the widget is mounted
+    public TextWidget bindText(ReadableSignal<? extends UiText> source) {
+        bind(source, t -> setText(t));
+        return this;
+    }
+
+    public TextStyle getStyle() { return style.get(); }
+
+    // Свой стиль для этого текста; null = брать из темы / Own style for this text; null = use the theme
+    public TextWidget setStyle(TextStyle value) {
+        style.set(value);
+        return this;
+    }
+
+    // Удобные сеттеры: фиксируют текущий стиль темы с одной заменой / Convenience setters: freeze the current theme style with one change
+    public TextWidget setColor(int argb) { return setStyle(style.get().withColor(argb)); }
+    public TextWidget setShadow(boolean shadow) { return setStyle(style.get().withShadow(shadow)); }
+
+    public TextWidget setAlignment(Alignment alignment) {
+        this.alignment = alignment;
+        return this;
+    }
 
     @Override
     protected Size measureContent(Constraints c) {
@@ -51,6 +77,7 @@ public class TextWidget extends Widget {
 
     @Override
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
+        TextStyle s = style.get();
         UiPlatform p = UiContext.platform();
         int textWidth = p.textWidth(text);
         int tx = switch (alignment) {
@@ -59,6 +86,11 @@ public class TextWidget extends Widget {
             default -> absX();
         };
         int ty = absY() + (getHeight() - p.lineHeight()) / 2;
-        g.drawText(text, tx, ty, color, shadow);
+        g.drawText(text, tx, ty, s.color(), s.shadow());
+    }
+
+    @Override
+    public void describe(List<String> lines) {
+        lines.add("text \"" + WidgetInfo.shorten(text.plain()) + "\"");
     }
 }

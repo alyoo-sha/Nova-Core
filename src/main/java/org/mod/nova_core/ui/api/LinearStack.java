@@ -24,10 +24,29 @@ public abstract class LinearStack extends Widget {
         this.vertical = vertical;
     }
 
-    public LinearStack setPadding(Insets padding) { this.padding = padding; return this; }
-    public LinearStack setGap(int gap) { this.gap = gap; return this; }
-    public LinearStack setAlignment(Alignment alignment) { this.alignment = alignment; return this; }
-    public LinearStack setJustification(Justification justification) { this.justification = justification; return this; }
+    public LinearStack setPadding(Insets padding) {
+        this.padding = padding;
+        requestLayout();
+        return this;
+    }
+
+    public LinearStack setGap(int gap) {
+        this.gap = gap;
+        requestLayout();
+        return this;
+    }
+
+    public LinearStack setAlignment(Alignment alignment) {
+        this.alignment = alignment;
+        requestLayout();
+        return this;
+    }
+
+    public LinearStack setJustification(Justification justification) {
+        this.justification = justification;
+        requestLayout();
+        return this;
+    }
 
     // ---------- Вспомогательные / Helpers ----------
     // main = главная ось (вдоль стека), cross = поперечная / main = axis along the stack, cross = perpendicular
@@ -122,7 +141,7 @@ public abstract class LinearStack extends Widget {
     // ---------- Проход 2: расстановка / Pass 2: position ----------
 
     @Override
-    public void layout() {
+    protected void layoutChildren() {
         List<Widget> items = visibleChildren();
         int n = items.size();
         if (n > 0) {
@@ -163,6 +182,6 @@ public abstract class LinearStack extends Widget {
                 pos += main(w) + mainMargin(w) + between;
             }
         }
-        super.layout(); // раскладка вложенных контейнеров / lay out nested containers
+        super.layoutChildren(); // раскладка вложенных контейнеров / lay out nested containers
     }
 }

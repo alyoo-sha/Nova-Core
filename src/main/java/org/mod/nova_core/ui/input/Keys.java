@@ -17,11 +17,22 @@ public final class Keys {
     public static final int HOME = 268;
     public static final int END = 269;
     public static final int KP_ENTER = 335;
+    public static final int A = 65;
+    public static final int C = 67;
+    public static final int V = 86;
+    public static final int X = 88;
+    public static final int B = 66;
+    public static final int I = 73;
+    public static final int L = 76;
+    public static final int P = 80;
+    public static final int F12 = 301;
 
     // Биты модификаторов / Modifier bits
     public static final int MOD_SHIFT = 1;
     public static final int MOD_CONTROL = 2;
     public static final int MOD_ALT = 4;
+    // Cmd на macOS, Win на остальных / Cmd on macOS, Win elsewhere
+    public static final int MOD_SUPER = 8;
 
     private Keys() {}
 }

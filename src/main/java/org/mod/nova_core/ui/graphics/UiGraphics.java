@@ -12,4 +12,10 @@ public interface UiGraphics {
     void pushClip(int x1, int y1, int x2, int y2);
 
     void popClip();
+
+    // Множитель прозрачности для всего, что рисуется до popOpacity; вложенные перемножаются
+    // Opacity multiplier for everything drawn until popOpacity; nested calls multiply
+    void pushOpacity(float opacity);
+
+    void popOpacity();
 }

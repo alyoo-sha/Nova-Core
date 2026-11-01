@@ -22,4 +22,15 @@ public final class McPlatform implements UiPlatform {
         Minecraft.getInstance().getSoundManager()
                 .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
     }
+
+    @Override
+    public String getClipboard() {
+        String value = Minecraft.getInstance().keyboardHandler.getClipboard();
+        return value == null ? "" : value;
+    }
+
+    @Override
+    public void setClipboard(String text) {
+        Minecraft.getInstance().keyboardHandler.setClipboard(text);
+    }
 }

@@ -9,4 +9,9 @@ public interface UiPlatform {
     int lineHeight();
 
     void playClickSound();
+
+    // Буфер обмена; пустая строка, если он пуст / The clipboard; an empty string if it is empty
+    String getClipboard();
+
+    void setClipboard(String text);
 }

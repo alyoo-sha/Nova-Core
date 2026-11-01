@@ -1,27 +1,36 @@
 package org.mod.nova_core.ui.api;
 
+
+import org.mod.nova_core.ui.animation.AnimatedValue;
+import org.mod.nova_core.ui.animation.Easing;
+import org.mod.nova_core.ui.animation.Interpolators;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
+import org.mod.nova_core.ui.debug.WidgetInfo;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
+import org.mod.nova_core.ui.input.KeyboardEvent;
 import org.mod.nova_core.ui.input.Keys;
 import org.mod.nova_core.ui.input.MouseButton;
+import org.mod.nova_core.ui.input.PointerEvent;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.Size;
 import org.mod.nova_core.ui.layout.SizeMode;
+import org.mod.nova_core.ui.style.ButtonStyle;
+import org.mod.nova_core.ui.style.Styles;
+import org.mod.nova_core.ui.theme.StyleRef;
+
+import java.util.List;
 
 // Кнопка: срабатывает при отпускании ЛКМ над ней, а также по Enter/Space в фокусе
 // Button: fires when LMB is released over it, and on Enter/Space while focused
 public class ButtonWidget extends Widget {
-    private static final int COLOR_NORMAL = 0xFF303030;
-    private static final int COLOR_HOVER = 0xFF454545;
-    private static final int COLOR_PRESSED = 0xFF202020;
-    private static final int COLOR_DISABLED = 0xFF1A1A1A;
-    private static final int BORDER_NORMAL = 0xFF606060;
-    private static final int BORDER_FOCUSED = 0xFFFFFFFF;
-    private static final int TEXT_NORMAL = 0xFFE0E0E0;
-    private static final int TEXT_DISABLED = 0xFF808080;
+    private final StyleRef<ButtonStyle> style = new StyleRef<>(Styles.BUTTON);
+    // Плавный цвет фона; начальное значение ставится на первом кадре, чтобы не было перехода «из ниоткуда»
+    // Smooth background color; the initial value is set on the first frame to avoid a transition "from nowhere"
+    private final AnimatedValue<Integer> bg = new AnimatedValue<>(Interpolators.COLOR, 0, 100L, Easing.EASE_OUT);
+    private boolean bgInitialized = false;
 
     private UiText label;
     private Runnable onClick;
@@ -44,6 +53,15 @@ public class ButtonWidget extends Widget {
         return this;
     }
 
+    public ButtonStyle getStyle() { return style.get(); }
+
+    // Свой стиль для этой кнопки; null = брать из темы / Own style for this button; null = use the theme
+    public ButtonWidget setStyle(ButtonStyle value) {
+        style.set(value);
+        requestLayout(); // отступы и высота влияют на размер / padding and height affect the size
+        return this;
+    }
+
     public ButtonWidget setOnClick(Runnable onClick) { this.onClick = onClick; return this; }
     public ButtonWidget setPlaySound(boolean playSound) { this.playSound = playSound; return this; }
 
@@ -58,59 +76,82 @@ public class ButtonWidget extends Widget {
     }
 
     @Override
+    protected void onUnmount() {
+        bg.finish(); // не оставлять цвет «на полпути» при повторном монтировании / do not leave the color mid-way on a remount
+    }
+
+    @Override
     protected Size measureContent(Constraints c) {
-        return new Size(UiContext.platform().textWidth(label) + 16, 20);
+        ButtonStyle s = style.get();
+        return new Size(UiContext.platform().textWidth(label) + s.paddingX() * 2, s.height());
     }
 
     @Override
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
+        ButtonStyle s = style.get();
         int ax = absX();
         int ay = absY();
         int w = getWidth();
         int h = getHeight();
-        boolean hovered = isActive() && contains(mouseX, mouseY);
+        boolean hovered = isActive() && isHovered();
 
-        int bg;
-        if (!isActive()) bg = COLOR_DISABLED;
-        else if (pressedState && hovered) bg = COLOR_PRESSED;
-        else if (hovered) bg = COLOR_HOVER;
-        else bg = COLOR_NORMAL;
+        int targetBg;
+        if (!isActive()) targetBg = s.disabled();
+        else if (pressedState && hovered) targetBg = s.pressed();
+        else if (hovered) targetBg = s.hover();
+        else targetBg = s.normal();
 
-        int border = isFocused() ? BORDER_FOCUSED : BORDER_NORMAL;
+        if (bgInitialized) {
+            bg.setTarget(targetBg);
+        } else {
+            bg.jumpTo(targetBg);
+            bgInitialized = true;
+        }
+
+        int border = isFocused() ? s.focusedBorder() : s.border();
 
         g.fill(ax, ay, ax + w, ay + h, border);
-        g.fill(ax + 1, ay + 1, ax + w - 1, ay + h - 1, bg);
+        g.fill(ax + 1, ay + 1, ax + w - 1, ay + h - 1, bg.peek());
 
         UiPlatform p = UiContext.platform();
         int tx = ax + (w - p.textWidth(label)) / 2;
         int ty = ay + (h - p.lineHeight()) / 2;
-        g.drawText(label, tx, ty, isActive() ? TEXT_NORMAL : TEXT_DISABLED, true);
+        g.drawText(label, tx, ty, isActive() ? s.text() : s.disabledText(), s.textShadow());
     }
 
     @Override
-    protected boolean onMouseClicked(double mx, double my, int button) {
-        if (button != MouseButton.LEFT) return false;
+    protected void onPointerDown(PointerEvent e) {
+        if (e.getButton() != MouseButton.LEFT) return;
         pressedState = true;
-        return true;
+        e.stopPropagation();
     }
 
     @Override
-    public boolean onMouseReleased(double mx, double my, int button) {
-        if (button != MouseButton.LEFT) return false;
-        boolean wasPressed = pressedState;
+    protected void onPointerUp(PointerEvent e) {
+        if (e.getButton() != MouseButton.LEFT || !pressedState) return;
         pressedState = false;
         // Срабатываем, только если отпустили над кнопкой / Fire only if released over the button
-        if (wasPressed && contains(mx, my)) activate();
-        return wasPressed;
+        if (contains(e.getX(), e.getY())) activate();
+        e.stopPropagation();
     }
 
     @Override
-    public boolean onKeyPressed(int key, int scanCode, int modifiers) {
+    protected void onKeyDown(KeyboardEvent e) {
+        int key = e.getKey();
         if (key == Keys.ENTER || key == Keys.KP_ENTER || key == Keys.SPACE) {
             activate();
-            return true;
+            e.stopPropagation();
         }
-        return false;
+    }
+
+    @Override
+    public void describe(List<String> lines) {
+        lines.add("label \"" + WidgetInfo.shorten(label.plain()) + "\"" + (pressedState ? "  pressed" : ""));
+    }
+
+    @Override
+    protected void onPointerCancel(PointerEvent e) {
+        pressedState = false;
     }
 
     @Override
