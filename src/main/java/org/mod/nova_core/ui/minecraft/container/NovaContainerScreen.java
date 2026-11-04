@@ -27,6 +27,8 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
     private final MachineLayout layout;
     private Panel machinePanel = null;
     private Panel inventoryPanel = null;
+    // Виджеты вне панелей (например, полоса эффектов под окном) / Widgets outside the panels (e.g. the effects bar below the window)
+    protected void buildExtras(Widget root) {}
 
     protected NovaContainerScreen(M menu, Inventory inventory, Component title, MachineLayout layout) {
         super(menu, inventory, title);
@@ -80,6 +82,7 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
             SlotFrame frame = new SlotFrame(large);
             frame.setPosition(leftPos + slot.x - offset, topPos + slot.y - offset);
             root.add(frame);
+            buildExtras(root);
         }
 
         buildMachine(machinePanel);

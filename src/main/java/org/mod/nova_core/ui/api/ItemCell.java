@@ -5,8 +5,10 @@ import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiItem;
 import org.mod.nova_core.ui.style.ButtonStyle;
 import org.mod.nova_core.ui.style.FieldStyle;
+import org.mod.nova_core.ui.style.SlotStyle;
 import org.mod.nova_core.ui.style.Styles;
 import org.mod.nova_core.ui.theme.StyleRef;
+import org.mod.nova_core.ui.theme.ThemeManager;
 
 // Ячейка с предметом по центру: подсветка при наведении и выборе, подсказка предмета. Размер задаёт список или сетка
 // A cell with an item in the middle: hover and selection highlight, the item tooltip. The size is set by the list or grid
@@ -17,6 +19,7 @@ public class ItemCell extends Widget {
     private UiItem item = null;
     private boolean selected = false;
     private boolean decorations = true;
+    private boolean slotBackground = false;
 
     public ItemCell() {
         super(0, 0, 0, 0);
@@ -33,6 +36,12 @@ public class ItemCell extends Widget {
         return this;
     }
 
+    // Тёмный скруглённый фон, как у слота инвентаря / A dark rounded background like an inventory slot's
+    public ItemCell setSlotBackground(boolean value) {
+        this.slotBackground = value;
+        return this;
+    }
+
     @Override
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         ButtonStyle b = buttonStyle.get();
@@ -40,6 +49,12 @@ public class ItemCell extends Widget {
         int ay = absY();
         int w = getWidth();
         int h = getHeight();
+
+        if (slotBackground) {
+            SlotStyle ss = ThemeManager.current().get(Styles.SLOT);
+            float in = ss.inset();
+            g.fillRounded(ax + in, ay + in, ax + w - in, ay + h - in, ss.radius(), ss.background());
+        }
 
         if (selected) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), fieldStyle.get().selection());
         else if (isHovered()) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), b.hover());

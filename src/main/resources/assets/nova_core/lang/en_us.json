@@ -10,5 +10,12 @@
   "key.nova_core.open_dnd_demo": "Open drag and drop demo",
   "key.nova_core.open_form_demo": "Open form demo",
   "menu.nova_core.workbench": "Workbench",
-  "menu.nova_core.workbench.clear": "Clear"
+  "menu.nova_core.workbench.clear": "Clear",
+  "nova_core.creative.search": "Search...",
+  "nova_core.creative.hotbar": "Hotbar",
+  "nova_core.creative.recent": "Recently used",
+  "nova_core.creative.results": "Search results",
+  "nova_core.creative.time": "Set time: %s",
+  "nova_core.creative.gamemode": "Game mode: %s",
+  "nova_core.creative.weather": "Set weather: %s"
 }

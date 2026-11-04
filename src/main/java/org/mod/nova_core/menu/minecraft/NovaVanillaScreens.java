@@ -84,15 +84,16 @@ public final class NovaVanillaScreens {
         Minecraft mc = Minecraft.getInstance();
         if (next == null || mc.player == null) return;
 
-        // Инвентарь выживания не имеет типа меню, поэтому определяется по экрану / The survival inventory has no menu type, so it is recognized by its screen
+        // Инвентарь выживания (E). В креативе ванильный InventoryScreen сам открывает креатив-экран, поэтому не трогаем
+        // The survival inventory (E). In creative the vanilla InventoryScreen opens the creative screen itself, so we leave it alone
         if (next instanceof InventoryScreen) {
+            if (mc.gameMode != null && mc.gameMode.hasInfiniteItems()) return;
             LocalPlayer player = mc.player;
             event.setNewScreen(new NovaInventoryScreen(player.inventoryMenu, player.getInventory(),
                     Component.translatable("container.crafting")));
             return;
         }
 
-        // Креатив: тот же экран с темой; при сбое (нет Mixin) остаётся ванильный / Creative: the same screen with the theme; on failure (no Mixin) the vanilla one stays
         if (next instanceof CreativeModeInventoryScreen && !(next instanceof NovaCreativeScreen)) {
             try {
                 event.setNewScreen(new NovaCreativeScreen(mc.player, mc.player.connection.enabledFeatures(),

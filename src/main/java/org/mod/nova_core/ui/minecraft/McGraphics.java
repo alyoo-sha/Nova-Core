@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
+import org.mod.nova_core.Nova_core;
 import org.mod.nova_core.ui.graphics.*;
 
 import java.util.ArrayDeque;
@@ -291,7 +292,7 @@ public final class McGraphics implements UiGraphics {
         if (image instanceof McSprite s) {
             delegate.blit(x, y, 0, width, height, s.sprite());
         } else if (image instanceof UiTexture t) {
-            delegate.blit(new ResourceLocation(t.location()), x, y, width, height,
+            delegate.blit(Nova_core.parse(t.location()), x, y, width, height,
                     t.u(), t.v(), t.regionWidth(), t.regionHeight(), t.textureWidth(), t.textureHeight());
         }
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);

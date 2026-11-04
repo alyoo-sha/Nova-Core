@@ -10,5 +10,12 @@
   "key.nova_core.open_dnd_demo": "Открыть демо перетаскивания",
   "key.nova_core.open_form_demo": "Открыть демо формы",
   "menu.nova_core.workbench": "Верстак",
-  "menu.nova_core.workbench.clear": "Очистить"
+  "menu.nova_core.workbench.clear": "Очистить",
+  "nova_core.creative.search": "Поиск...",
+  "nova_core.creative.hotbar": "Хотбар",
+  "nova_core.creative.recent": "Недавние",
+  "nova_core.creative.results": "Результаты поиска",
+  "nova_core.creative.time": "Время: %s",
+  "nova_core.creative.gamemode": "Режим игры: %s",
+  "nova_core.creative.weather": "Погода: %s"
 }

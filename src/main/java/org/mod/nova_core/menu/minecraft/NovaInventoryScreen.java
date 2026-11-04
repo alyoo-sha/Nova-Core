@@ -8,6 +8,8 @@ import org.mod.nova_core.menu.MachineLayout;
 import org.mod.nova_core.ui.api.ArrowWidget;
 import org.mod.nova_core.ui.api.Panel;
 import org.mod.nova_core.ui.api.PlayerPreview;
+import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.minecraft.McEffectsBar;
 import org.mod.nova_core.ui.minecraft.container.SlotAccess;
 import org.mod.nova_core.ui.minecraft.vanilla.NovaVanillaScreen;
 
@@ -80,5 +82,10 @@ public class NovaInventoryScreen extends NovaVanillaScreen<InventoryMenu> {
         }
         originalPositions.clear();
         super.removed();
+    }
+
+    @Override
+    protected void buildExtras(Widget root) {
+        root.add(new McEffectsBar(leftPos, topPos + imageHeight + 4, imageWidth));
     }
 }
