@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ResultSlot;
 import net.minecraft.world.inventory.Slot;
 import org.mod.nova_core.menu.MachineLayout;
@@ -17,20 +18,24 @@ import org.mod.nova_core.ui.minecraft.McText;
 import org.mod.nova_core.ui.minecraft.UiHost;
 import org.mod.nova_core.ui.style.Styles;
 
-// Экран механизма на Nova Core: две отдельные панели вместо ванильной текстуры. Слоты, предметы и перенос предметов
-// остаются ванильными, поэтому всё работает так же, как в обычном контейнере. Потомок наполняет панель механизма
-// A machine screen on Nova Core: two separate panels instead of the vanilla texture. Slots, items and item dragging
-// stay vanilla, so everything works like in a regular container. A subclass fills the machine panel
-public abstract class NovaContainerScreen<M extends NovaMachineMenu> extends AbstractContainerScreen<M> {
+// Экран контейнера на Nova Core: две отдельные панели вместо ванильной текстуры. Работает с любым меню,
+// в том числе ванильным. Слоты, предметы и перенос предметов остаются ванильными
+// A container screen on Nova Core: two separate panels instead of the vanilla texture. Works with any menu,
+// including vanilla ones. Slots, items and item dragging stay vanilla
+public abstract class NovaContainerScreen<M extends AbstractContainerMenu> extends AbstractContainerScreen<M> {
     private final UiHost host = new UiHost(this::buildTree, this::initialFocus);
+    private final MachineLayout layout;
     private Panel machinePanel = null;
     private Panel inventoryPanel = null;
 
-    protected NovaContainerScreen(M menu, Inventory inventory, Component title) {
+    protected NovaContainerScreen(M menu, Inventory inventory, Component title, MachineLayout layout) {
         super(menu, inventory, title);
-        this.imageWidth = menu.layout().imageWidth();
-        this.imageHeight = menu.layout().imageHeight();
+        this.layout = layout;
+        this.imageWidth = layout.imageWidth();
+        this.imageHeight = layout.imageHeight();
     }
+
+    protected final MachineLayout layout() { return layout; }
 
     // Наполняет панель механизма; координаты отсчитываются от её левого верхнего угла
     // Fills the machine panel; coordinates are measured from its top-left corner
@@ -38,9 +43,13 @@ public abstract class NovaContainerScreen<M extends NovaMachineMenu> extends Abs
 
     protected Widget initialFocus() { return null; }
 
+    // Переставляет слоты под раскладку; для ванильных меню, где позиции не наши. Вызывается при каждой сборке
+    // Moves the slots to the layout; for vanilla menus whose positions are not ours. Called on every build
+    protected void positionSlots(MachineLayout layout) {}
+
     // Большая рамка для результата / A large frame for a result
     protected boolean isLargeSlot(Slot slot) {
-        return slot instanceof ResultSlot;
+        return slot instanceof ResultSlot || (menu instanceof NovaMachineMenu m && m.isOutputSlot(slot));
     }
 
     @Override
@@ -50,7 +59,8 @@ public abstract class NovaContainerScreen<M extends NovaMachineMenu> extends Abs
     }
 
     private void buildTree(Widget root) {
-        MachineLayout layout = menu.layout();
+        positionSlots(layout);
+
         machinePanel = new Panel(leftPos + layout.machineLeft(), topPos,
                 layout.machineWidth(), layout.machineHeight(), Styles.POPUP);
         inventoryPanel = new Panel(leftPos + layout.inventoryLeft(), topPos + layout.inventoryTop(),
@@ -77,7 +87,7 @@ public abstract class NovaContainerScreen<M extends NovaMachineMenu> extends Abs
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g);
+        host.renderBackdrop(g);
         super.render(g, mouseX, mouseY, partialTick); // вызывает renderBg, затем рисует предметы / calls renderBg, then draws the items
         host.renderTop(g, mouseX, mouseY, partialTick);
         if (!host.hasModal()) renderTooltip(g, mouseX, mouseY);
@@ -99,9 +109,9 @@ public abstract class NovaContainerScreen<M extends NovaMachineMenu> extends Abs
     @Override
     protected boolean hasClickedOutside(double mx, double my, int left, int top, int button) {
         if (machinePanel == null || inventoryPanel == null) return super.hasClickedOutside(mx, my, left, top, button);
-        boolean inGap = mx >= left && mx < left + imageWidth && my >= top && my < top + imageHeight
-                && !machinePanel.contains(mx, my) && !inventoryPanel.contains(mx, my);
-        return !machinePanel.contains(mx, my) && !inventoryPanel.contains(mx, my) && !inGap;
+        boolean inPanels = machinePanel.contains(mx, my) || inventoryPanel.contains(mx, my);
+        boolean inGap = mx >= left && mx < left + imageWidth && my >= top && my < top + imageHeight;
+        return !inPanels && !inGap;
     }
 
     @Override

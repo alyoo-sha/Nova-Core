@@ -1,5 +1,6 @@
 package org.mod.nova_core.ui.dnd;
 
+import org.mod.nova_core.ui.api.ScrollView;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.input.MouseButton;
@@ -31,6 +32,11 @@ public final class DragLayer extends Widget {
     private DragSession session = null;
     private DragSource activeSource = null;
     private Widget ghost = null;
+    private static final int EDGE = 18;
+    private static final int MAX_SCROLL_SPEED = 8;
+    private int grabX = 0;
+    private int grabY = 0;
+    private boolean centered = true;
     private DropTarget hoveredTarget = null;
     private double pointerX = 0;
     private double pointerY = 0;
@@ -138,6 +144,9 @@ public final class DragLayer extends Widget {
         session = new DragSession(info.data(), c.widget, pressX, pressY);
         session.setPointer(pointerX, pointerY);
         activeSource = src;
+        grabX = info.grabX();
+        grabY = info.grabY();
+        centered = info.centered();
         hoveredTarget = null;
 
         Widget g = info.ghost();
@@ -158,6 +167,7 @@ public final class DragLayer extends Widget {
 
         // Ближайший принимающий предок того, что под курсором / The nearest accepting ancestor of whatever is under the cursor
         Widget hit = root().hitTest(pointerX, pointerY);
+        autoScroll(hit);
         Widget newWidget = null;
         DropTarget newTarget = null;
         for (Widget w = hit; w != null; w = w.getParent()) {
@@ -206,13 +216,31 @@ public final class DragLayer extends Widget {
         else remove(g);
     }
 
+    // Если курсор у верхнего или нижнего края прокручиваемого списка, список едет сам / If the cursor is at a scrollable list's top or bottom edge, the list scrolls by itself
+    private void autoScroll(Widget hit) {
+        for (Widget w = hit; w != null; w = w.getParent()) {
+            if (!(w instanceof ScrollView view) || view.getMaxScroll() <= 0) continue;
+            int top = view.absY();
+            int bottom = top + view.getHeight();
+            int delta = 0;
+            if (pointerY < top + EDGE) {
+                delta = -(int) Math.ceil(MAX_SCROLL_SPEED * Math.min(1.0, (top + EDGE - pointerY) / EDGE));
+            } else if (pointerY > bottom - EDGE) {
+                delta = (int) Math.ceil(MAX_SCROLL_SPEED * Math.min(1.0, (pointerY - (bottom - EDGE)) / EDGE));
+            }
+            if (delta != 0) view.scrollImmediately(delta);
+            return;
+        }
+    }
+
     // «Призрак» центрируется на курсоре; позиция слоя совпадает с экраном, поэтому координаты общие
     // The ghost is centered on the cursor; the layer matches the screen, so the coordinates are shared
     @Override
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         if (ghost == null || session == null) return;
-        ghost.setPosition(
-                (int) Math.round(pointerX) - ghost.getWidth() / 2,
-                (int) Math.round(pointerY) - ghost.getHeight() / 2);
+        int px = (int) Math.round(pointerX);
+        int py = (int) Math.round(pointerY);
+        if (centered) ghost.setPosition(px - ghost.getWidth() / 2, py - ghost.getHeight() / 2);
+        else ghost.setPosition(px - grabX, py - grabY);
     }
 }

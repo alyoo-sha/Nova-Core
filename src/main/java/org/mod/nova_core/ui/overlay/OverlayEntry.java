@@ -101,13 +101,30 @@ final class OverlayEntry extends Widget {
     private void reposition() {
         Widget anchor = options.getPlacement().anchor();
         if (anchor != null && anchor.root() != host.root()) {
-            host.deferClose(this); // якорь убрали из дерева; закрывать из отрисовки нельзя / the anchor left the tree; closing from rendering is unsafe
+            host.deferClose(this); // якорь убрали из дерева / the anchor left the tree
             return;
         }
+        // Якорь ушёл за край прокрутки: прячем оверлей, пока он не вернётся / The anchor scrolled out of view: hide the overlay until it returns
+        content.setVisible(anchor == null || isShownThroughClips(anchor));
         Placement.Position p = options.getPlacement().resolve(
                 getWidth(), getHeight(), content.getWidth(), content.getHeight(),
                 host.getPointerX(), host.getPointerY());
         content.setPosition(p.x(), p.y());
+    }
+
+    private static boolean isShownThroughClips(Widget w) {
+        int l = w.absX();
+        int t = w.absY();
+        int r = l + w.getWidth();
+        int b = t + w.getHeight();
+        for (Widget p = w.getParent(); p != null; p = p.getParent()) {
+            if (!p.isVisible()) return false;
+            if (p.isClipChildren()
+                    && (r <= p.absX() || l >= p.absX() + p.getWidth() || b <= p.absY() || t >= p.absY() + p.getHeight())) {
+                return false;
+            }
+        }
+        return w.isVisible();
     }
 
     @Override

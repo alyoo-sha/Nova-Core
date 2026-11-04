@@ -13,20 +13,14 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
 import org.mod.nova_core.menu.NovaCoreMenus;
+import org.mod.nova_core.menu.minecraft.NovaWorkbenchScreen;
+import org.mod.nova_core.ui.animation.Animator;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.debug.DebugLog;
 import org.mod.nova_core.ui.minecraft.McPlatform;
-import org.mod.nova_core.ui.minecraft.demo.AnimationDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.CollectionsDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.ControlsDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.DemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.DndDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.FormDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.NovaWorkbenchScreen;
-import org.mod.nova_core.ui.minecraft.demo.OverlayDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.ScrollDemoScreen;
-import org.mod.nova_core.ui.minecraft.demo.StateDemoScreen;
+import org.mod.nova_core.ui.minecraft.demo.*;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
@@ -44,6 +38,7 @@ public final class NovaCoreClient {
     public static final KeyMapping OPEN_COLLECTIONS_DEMO = key("open_collections_demo", GLFW.GLFW_KEY_U);
     public static final KeyMapping OPEN_DND_DEMO = key("open_dnd_demo", GLFW.GLFW_KEY_N);
     public static final KeyMapping OPEN_FORM_DEMO = key("open_form_demo", GLFW.GLFW_KEY_M);
+    public static final KeyMapping OPEN_LIMITS_DEMO = key("open_limits_demo", GLFW.GLFW_KEY_L);
 
     private NovaCoreClient() {}
 
@@ -56,7 +51,7 @@ public final class NovaCoreClient {
         UiContext.install(new McPlatform());
 
         // Дамп дерева инспектора (Alt+P) идёт в лог игры / The inspector's tree dump (Alt+P) goes to the game log
-        Logger logger = LogUtils.getLogger();
+        Logger logger = LoggerFactory.getLogger("Nova Core");
         DebugLog.setSink(message -> logger.info("\n{}", message));
 
         // Экран верстака привязывается к типу меню / The workbench screen is bound to its menu type
@@ -79,6 +74,7 @@ public final class NovaCoreClient {
             event.register(OPEN_COLLECTIONS_DEMO);
             event.register(OPEN_DND_DEMO);
             event.register(OPEN_FORM_DEMO);
+            event.register(OPEN_LIMITS_DEMO);
         }
     }
 
@@ -86,6 +82,11 @@ public final class NovaCoreClient {
     @Mod.EventBusSubscriber(modid = Nova_core.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     public static final class ForgeEvents {
         private ForgeEvents() {}
+
+        @SubscribeEvent
+        public static void onRenderTick(TickEvent.RenderTickEvent event) {
+            if (event.phase == TickEvent.Phase.START) Animator.shared().tick(System.nanoTime());
+        }
 
         @SubscribeEvent
         public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -100,6 +101,7 @@ public final class NovaCoreClient {
             openOnPress(mc, OPEN_COLLECTIONS_DEMO, CollectionsDemoScreen::new);
             openOnPress(mc, OPEN_DND_DEMO, DndDemoScreen::new);
             openOnPress(mc, OPEN_FORM_DEMO, FormDemoScreen::new);
+            openOnPress(mc, OPEN_LIMITS_DEMO, LimitsDemoScreen::new);
         }
 
         // consumeClick() в цикле, чтобы не копились нажатия; открываем только из мира и без другого экрана

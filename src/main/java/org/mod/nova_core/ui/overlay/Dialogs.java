@@ -1,10 +1,6 @@
 package org.mod.nova_core.ui.overlay;
 
-import org.mod.nova_core.ui.api.ButtonWidget;
-import org.mod.nova_core.ui.api.HStack;
-import org.mod.nova_core.ui.api.Panel;
-import org.mod.nova_core.ui.api.TextWidget;
-import org.mod.nova_core.ui.api.VStack;
+import org.mod.nova_core.ui.api.*;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.layout.Alignment;
@@ -32,7 +28,7 @@ public final class Dialogs {
         stack.setPadding(Insets.all(10)).setGap(8).setAlignment(Alignment.STRETCH);
 
         TextWidget titleText = new TextWidget(0, 0, 0, 12, title).setAlignment(Alignment.CENTER);
-        TextWidget messageText = new TextWidget(0, 0, 0, 12, message).setAlignment(Alignment.CENTER);
+        WrappedText messageText = new WrappedText(0, 0, message).setAlignment(Alignment.CENTER);
 
         HStack row = new HStack(0, 0, 0, 20);
         row.setGap(6);

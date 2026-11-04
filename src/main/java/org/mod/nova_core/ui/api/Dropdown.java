@@ -80,7 +80,7 @@ public class Dropdown extends ButtonWidget {
                 onSelect.accept(index);
             }));
         }
-        open = Menus.show(this, Placement.anchored(this, Placement.Side.BELOW), items, getWidth());
+        open = Menus.show(this, Placement.anchored(this, Placement.Side.BELOW), items, getWidth(), 160, getSelectedIndex());
     }
 
     // В режиме WRAP ширина по самому длинному пункту плюс место под стрелку / In WRAP mode the width fits the longest option plus room for the arrow

@@ -31,7 +31,7 @@ public abstract class UIScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g);
+        host.renderBackdrop(g);
         host.prepare(mouseX, mouseY);
         host.renderContent(g, mouseX, mouseY, partialTick);
         host.renderTop(g, mouseX, mouseY, partialTick);

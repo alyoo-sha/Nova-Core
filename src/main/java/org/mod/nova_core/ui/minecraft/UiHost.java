@@ -1,6 +1,7 @@
 package org.mod.nova_core.ui.minecraft;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import org.mod.nova_core.ui.animation.Animator;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.debug.DebugLayer;
@@ -13,10 +14,14 @@ import org.mod.nova_core.ui.layout.SizeMode;
 import org.mod.nova_core.ui.navigation.Direction;
 import org.mod.nova_core.ui.navigation.FocusNavigator;
 import org.mod.nova_core.ui.overlay.OverlayHost;
+import org.mod.nova_core.ui.style.BackdropStyle;
+import org.mod.nova_core.ui.style.Gradient;
+import org.mod.nova_core.ui.style.Styles;
 import org.mod.nova_core.ui.theme.ThemeManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -42,6 +47,10 @@ public final class UiHost {
     private Widget pressed = null;
     private final List<Widget> hoverPath = new ArrayList<>();
     private final List<Widget> newHoverPath = new ArrayList<>();
+
+    // Замеры кадра для инспектора / Frame measurements for the inspector
+    private long prepNanos = 0L;
+    private long drawNanos = 0L;
 
     public UiHost(Consumer<Widget> builder, Supplier<Widget> initialFocus) {
         this.builder = builder;
@@ -100,8 +109,19 @@ public final class UiHost {
 
     // ---------- Кадр / Frame ----------
 
+    // Фон за экраном из темы / The backdrop behind the screen from the theme
+    public void renderBackdrop(GuiGraphics g) {
+        BackdropStyle style = ThemeManager.current().get(Styles.BACKDROP);
+        Gradient f = style.fill();
+        graphics.begin(g);
+        graphics.fillRoundedGradient(0, 0, width, height, 0f,
+                f.topLeft(), f.topRight(), f.bottomLeft(), f.bottomRight());
+        graphics.end();
+    }
+
     // Один раз за кадр до отрисовки: анимации, раскладка, hover / Once per frame before drawing: animations, layout, hover
     public void prepare(int mx, int my) {
+        long start = System.nanoTime();
         Animator.shared().tick(System.nanoTime());
         overlays.flush();
         overlays.setPointer(mx, my);
@@ -111,22 +131,45 @@ public final class UiHost {
         updateHover(mx, my);
         // Обработчики enter/leave могли открыть оверлей или изменить размеры / enter/leave handlers may have opened an overlay or changed sizes
         treeRoot.performLayout(c);
+        prepNanos = System.nanoTime() - start;
+        drawNanos = 0L;
     }
 
     // Содержимое экрана / The screen content
     public void renderContent(GuiGraphics g, int mx, int my, float partialTick) {
+        long start = System.nanoTime();
         graphics.begin(g);
         root.render(graphics, mx, my, partialTick);
         graphics.end();
+        drawNanos += System.nanoTime() - start;
     }
 
-    // Слои поверх всего: оверлеи, «призрак» переноса, инспектор / Layers above everything: overlays, the drag ghost, the inspector
+    // Слои поверх всего: оверлеи, «призрак» переноса, инспектор. Сдвинуты по глубине выше предметов в слотах (z 150-200)
+    // и ниже ванильных подсказок (z 400)
+    // Layers above everything: overlays, the drag ghost, the inspector. Shifted in depth above the items in slots (z 150-200)
+    // and below vanilla tooltips (z 400)
     public void renderTop(GuiGraphics g, int mx, int my, float partialTick) {
+        long start = System.nanoTime();
+        g.pose().pushPose();
+        g.pose().translate(0f, 0f, 300f);
         graphics.begin(g);
         overlays.render(graphics, mx, my, partialTick);
         dragLayer.render(graphics, mx, my, partialTick);
         debug.render(graphics, mx, my, partialTick);
         graphics.end();
+        g.pose().popPose();
+        drawNanos += System.nanoTime() - start;
+
+        if (debug.isEnabled()) {
+            debug.setStats(String.format(Locale.ROOT, "prep %.2f ms  draw %.2f ms  widgets %d",
+                    prepNanos / 1_000_000.0, drawNanos / 1_000_000.0, countWidgets(treeRoot)));
+        }
+    }
+
+    private static int countWidgets(Widget w) {
+        int n = 1;
+        for (Widget c : w.getChildren()) n += countWidgets(c);
+        return n;
     }
 
     private void updateHover(int mx, int my) {
@@ -150,6 +193,13 @@ public final class UiHost {
 
     // ---------- Мышь / Mouse ----------
 
+    // Зажатые модификаторы; Ctrl на macOS соответствует Cmd / Held modifiers; Ctrl on macOS corresponds to Cmd
+    private static int modifiers() {
+        return (Screen.hasShiftDown() ? Keys.MOD_SHIFT : 0)
+                | (Screen.hasControlDown() ? Keys.MOD_CONTROL : 0)
+                | (Screen.hasAltDown() ? Keys.MOD_ALT : 0);
+    }
+
     public boolean mouseClicked(double mx, double my, int button) {
         if (debug.handleMouseDown(mx, my, button)) return true;
         if (dragLayer.isDragging()) return true; // во время переноса остальные нажатия игнорируются / other presses are ignored during a drag
@@ -167,7 +217,7 @@ public final class UiHost {
 
         dragLayer.press(target, mx, my, button);
 
-        PointerEvent event = PointerEvent.down(mx, my, button);
+        PointerEvent event = PointerEvent.down(mx, my, button, modifiers());
         target.dispatchEvent(event);
         if (event.getStoppedBy() instanceof Widget claimer) pressed = claimer;
         // Всё, что лежит в оверлеях, считается занятым: клик не должен «проваливаться» к слотам под ним
@@ -184,7 +234,7 @@ public final class UiHost {
         pressed = null;
         if (claimer == null) return false;
 
-        PointerEvent event = PointerEvent.up(mx, my, button);
+        PointerEvent event = PointerEvent.up(mx, my, button, modifiers());
         claimer.dispatchEvent(event);
         return event.isPropagationStopped();
     }
@@ -203,7 +253,7 @@ public final class UiHost {
         }
         if (pressed == null) return false;
 
-        PointerEvent event = PointerEvent.drag(mx, my, button, dx, dy);
+        PointerEvent event = PointerEvent.drag(mx, my, button, dx, dy, modifiers());
         pressed.dispatchEvent(event);
         return event.isPropagationStopped();
     }
@@ -217,7 +267,7 @@ public final class UiHost {
         Widget target = treeRoot.hitTest(mx, my);
         if (target == null) return false;
 
-        PointerEvent event = PointerEvent.scroll(mx, my, delta);
+        PointerEvent event = PointerEvent.scroll(mx, my, delta, modifiers());
         target.dispatchEvent(event);
         return event.isPropagationStopped();
     }
@@ -238,6 +288,12 @@ public final class UiHost {
         // Escape во время переноса отменяет перенос / Escape during a drag cancels the drag
         if (key == Keys.ESCAPE && dragLayer.isDragging()) {
             dragLayer.cancel();
+            return true;
+        }
+        // Alt+стрелки всегда двигают фокус, даже когда стрелки нужны полю ввода или ползунку
+        // Alt+arrows always move the focus, even when the arrows are needed by a text field or a slider
+        if ((modifiers & Keys.MOD_ALT) != 0 && directionOf(key) != null
+                && handleNavigationKey(key, modifiers & ~Keys.MOD_ALT)) {
             return true;
         }
 

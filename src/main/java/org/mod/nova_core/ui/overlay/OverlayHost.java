@@ -46,6 +46,13 @@ public final class OverlayHost extends Widget {
 
     // ---------- Открытие и закрытие / Opening and closing ----------
 
+    // Все открытые оверлеи (кроме закрывающихся) / All open overlays (except the closing ones)
+    public List<Overlay> openOverlays() {
+        List<Overlay> out = new ArrayList<>();
+        for (OverlayEntry e : entries()) if (!e.isClosing()) out.add(e.handle());
+        return out;
+    }
+
     public Overlay show(Widget content, OverlayOptions options) {
         OverlayEntry entry = new OverlayEntry(this, content, options);
         add(entry);

@@ -3,7 +3,6 @@ package org.mod.nova_core.ui.api;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.context.UiPlatform;
-import org.mod.nova_core.ui.graphics.TextWrap;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.layout.Alignment;
@@ -18,14 +17,14 @@ import org.mod.nova_core.ui.theme.StyleRef;
 import java.util.ArrayList;
 import java.util.List;
 
-// Многострочный текст с переносом по ширине. По умолчанию ширина FILL, высота WRAP (считается сама).
-// Переносится простой текст (plain): стили внутри Component при переносе не сохраняются
-// Multi-line text wrapped to the width. Width is FILL and height is WRAP (computed) by default.
-// Plain text is wrapped: styles inside a Component are not kept
+// Многострочный текст с переносом по ширине; цвета и стили внутри текста сохраняются.
+// По умолчанию ширина FILL, высота WRAP (считается сама)
+// Multi-line text wrapped to the width; colors and styles inside the text are kept.
+// Width is FILL and height is WRAP (computed) by default
 public class WrappedText extends Widget {
     private final StyleRef<TextStyle> style = new StyleRef<>(Styles.TEXT);
     // Строки, полученные при последней раскладке / Lines produced by the last layout
-    private final List<String> lines = new ArrayList<>();
+    private final List<UiText> lines = new ArrayList<>();
 
     private UiText text;
     // START, CENTER, END (STRETCH = START) / START, CENTER, END (STRETCH = START)
@@ -72,17 +71,12 @@ public class WrappedText extends Widget {
         return this;
     }
 
-    private List<String> wrapTo(int maxWidth) {
-        UiPlatform p = UiContext.platform();
-        return TextWrap.wrap(text.plain(), maxWidth, s -> p.textWidth(UiText.literal(s)));
-    }
-
     @Override
     protected Size measureContent(Constraints c) {
         UiPlatform p = UiContext.platform();
-        List<String> measured = wrapTo(c.maxWidth());
+        List<UiText> measured = p.wrap(text, c.maxWidth());
         int w = 0;
-        for (String line : measured) w = Math.max(w, p.textWidth(UiText.literal(line)));
+        for (UiText line : measured) w = Math.max(w, p.textWidth(line));
         int n = Math.max(1, measured.size());
         return new Size(w, n * p.lineHeight() + (n - 1) * lineSpacing);
     }
@@ -90,7 +84,7 @@ public class WrappedText extends Widget {
     @Override
     protected void layoutChildren() {
         lines.clear();
-        lines.addAll(wrapTo(getWidth()));
+        lines.addAll(UiContext.platform().wrap(text, getWidth()));
         super.layoutChildren();
     }
 
@@ -99,15 +93,14 @@ public class WrappedText extends Widget {
         TextStyle s = style.get();
         UiPlatform p = UiContext.platform();
         int y = absY();
-        for (String line : lines) {
-            UiText lineText = UiText.literal(line);
-            int lineWidth = p.textWidth(lineText);
+        for (UiText line : lines) {
+            int lineWidth = p.textWidth(line);
             int x = switch (alignment) {
                 case CENTER -> absX() + (getWidth() - lineWidth) / 2;
                 case END -> absX() + getWidth() - lineWidth;
                 default -> absX();
             };
-            g.drawText(lineText, x, y, s.color(), s.shadow());
+            g.drawText(line, x, y, s.color(), s.shadow());
             y += p.lineHeight() + lineSpacing;
         }
     }

@@ -4,16 +4,19 @@ import org.mod.nova_core.ui.api.ScrollView;
 import org.mod.nova_core.ui.component.Widget;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 // Поиск следующего виджета для фокуса; работает внутри заданной области (scope) / Finds the next widget to focus; works inside a given scope
 public final class FocusNavigator {
     private FocusNavigator() {}
 
-    // Виджеты, которые сейчас могут получить фокус, в порядке дерева / Widgets that can take focus right now, in tree order
     public static List<Widget> focusables(Widget scope) {
         List<Widget> out = new ArrayList<>();
         collect(scope, out);
+        // tabIndex > 0 первыми по возрастанию; сортировка устойчива, поэтому остальные сохраняют порядок дерева
+        // tabIndex > 0 first in ascending order; the sort is stable, so the rest keep the tree order
+        out.sort(Comparator.comparingInt(w -> w.getTabIndex() > 0 ? w.getTabIndex() : Integer.MAX_VALUE));
         return out;
     }
 

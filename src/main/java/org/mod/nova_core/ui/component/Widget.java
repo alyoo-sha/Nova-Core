@@ -73,6 +73,9 @@ public class Widget implements EventTarget {
     private boolean hovered = false;
     // Используется только у корня: кто сейчас в фокусе / Used on the root only: who currently has focus
     private Widget focusOwner = null;
+    // 0 = порядок дерева; > 0 идут раньше в порядке возрастания (как tabindex в HTML)
+    // 0 = tree order; > 0 come first in ascending order (like HTML tabindex)
+    private int tabIndex = 0;
 
     // Слушатели смены фокуса, например чтобы пометить поле формы «тронутым» / Focus change listeners, e.g. to mark a form field "touched"
     private final List<Consumer<Boolean>> focusListeners = new ArrayList<>();
@@ -260,6 +263,16 @@ public class Widget implements EventTarget {
     // Does not trigger layout: stacks move children this way. If you manually move a child inside a WRAP container
     // after the first layout, call requestLayout()
     public void setPosition(int x, int y) { this.x = x; this.y = y; }
+
+    public int getTabIndex() { return tabIndex; }
+    public void setTabIndex(int tabIndex) { this.tabIndex = Math.max(0, tabIndex); }
+
+    // Как setPosition, но с перерасчётом раскладки: для ручного перемещения виджета
+    // Like setPosition but re-lays out: for moving a widget by hand
+    public void moveTo(int x, int y) {
+        setPosition(x, y);
+        requestLayout();
+    }
 
     // Задаёт запрошенный (для FIXED) и текущий размер / Sets the requested (for FIXED) and current size
     public void setSize(int width, int height) {

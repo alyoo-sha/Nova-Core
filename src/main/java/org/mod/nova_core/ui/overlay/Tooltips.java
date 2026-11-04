@@ -69,7 +69,9 @@ public final class Tooltips {
         private void show() {
             timer = null;
             if (!attached || !anchor.isMounted() || !anchor.isHovered()) return;
-            shown = OverlayHost.of(anchor).show(factory.get(), OverlayOptions.tooltip(Placement.atPointer()));
+            Widget content = factory.get();
+            if (content == null) return;
+            shown = OverlayHost.of(anchor).show(content, OverlayOptions.tooltip(Placement.atPointer()));
         }
 
         void hide() {

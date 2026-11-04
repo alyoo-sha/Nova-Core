@@ -62,8 +62,8 @@ public class TextCell extends Widget {
         int w = getWidth();
         int h = getHeight();
 
-        if (selected) g.fill(ax, ay, ax + w, ay + h, fieldStyle.get().selection());
-        else if (isHovered()) g.fill(ax, ay, ax + w, ay + h, b.hover());
+        if (selected) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), fieldStyle.get().selection());
+        else if (isHovered()) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), b.hover());
 
         UiPlatform p = UiContext.platform();
         g.drawText(text, ax + paddingX, ay + (h - p.lineHeight()) / 2, b.text(), b.textShadow());

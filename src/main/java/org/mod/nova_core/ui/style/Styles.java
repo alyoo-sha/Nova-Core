@@ -21,6 +21,8 @@ public final class Styles {
             StyleKey.of("nova_core:popup", PanelStyle.class, new PanelStyle(0xFF181818, 0xFF505050, 1));
     public static final StyleKey<SlotStyle> SLOT =
             StyleKey.of("nova_core:slot", SlotStyle.class, SlotStyle.DEFAULT);
+    public static final StyleKey<BackdropStyle> BACKDROP =
+            StyleKey.of("nova_core:backdrop", BackdropStyle.class, BackdropStyle.DEFAULT);
 
     private Styles() {}
 }

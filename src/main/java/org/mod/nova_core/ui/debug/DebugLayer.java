@@ -42,6 +42,11 @@ public final class DebugLayer extends Widget {
     private int pointerX = 0;
     private int pointerY = 0;
 
+    private String stats = "";
+
+    // Строка замеров, которую выставляет хост каждый кадр / The measurements line the host sets every frame
+    public void setStats(String stats) { this.stats = stats; }
+
     public DebugLayer() {
         super(0, 0, 0, 0);
         setSizeMode(SizeMode.FILL, SizeMode.FILL);
@@ -246,6 +251,7 @@ public final class DebugLayer extends Widget {
                 raw.add(new Line(info.get(i), i == 0 ? COLOR_NAME : COLOR_TEXT));
             }
         }
+        if (!stats.isEmpty()) raw.add(new Line(stats, COLOR_DIM));
         raw.add(new Line("Alt+arrows: parent/child/sibling", COLOR_DIM));
         raw.add(new Line("Alt+L / MMB: lock   Alt+B: bounds", COLOR_DIM));
         raw.add(new Line("Alt+C: copy   Alt+P: dump   F12: off", COLOR_DIM));

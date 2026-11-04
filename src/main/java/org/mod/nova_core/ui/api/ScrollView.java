@@ -33,6 +33,9 @@ public class ScrollView extends Widget {
     // Перетаскивание ползунка / Thumb dragging
     private boolean dragging = false;
     private int grabOffset = 0;
+    // Прокрутка, которая применится при первой раскладке, когда размеры уже известны
+    // A scroll applied at the first layout, once the sizes are known
+    private int pendingScroll = -1;
 
     public ScrollView(int x, int y, int width, int height) {
         super(x, y, width, height);
@@ -86,9 +89,15 @@ public class ScrollView extends Widget {
 
     @Override
     protected void layoutChildren() {
-        // Если контент стал короче, подрезать прокрутку / If the content got shorter, clamp the scroll
-        if (getTargetScroll() > getMaxScroll()) setScroll(getMaxScroll());
-        else applyScroll();
+        if (pendingScroll >= 0) {
+            int target = pendingScroll;
+            pendingScroll = -1;
+            setScroll(target);
+        } else if (getTargetScroll() > getMaxScroll()) {
+            setScroll(getMaxScroll());
+        } else {
+            applyScroll();
+        }
         super.layoutChildren();
     }
 
@@ -128,6 +137,16 @@ public class ScrollView extends Widget {
     }
 
     public void scrollBy(int delta) { scrollTo(getTargetScroll() + delta); }
+
+    public ScrollView setInitialScroll(int value) {
+        this.pendingScroll = Math.max(0, value);
+        return this;
+    }
+
+    // Сразу, без анимации / Instantly, with no animation
+    public void scrollImmediately(int delta) {
+        setScroll(getScroll() + delta);
+    }
 
     // Показать область [top, bottom) контента / Make content range [top, bottom) visible
     public void scrollToShow(int top, int bottom) {

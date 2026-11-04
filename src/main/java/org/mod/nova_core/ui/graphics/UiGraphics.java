@@ -33,6 +33,20 @@ public interface UiGraphics {
         fillRounded(x1, y1, x2, y2, radius, topLeft);
     }
 
+    // Модель локального игрока, повёрнутая за курсором; платформа решает, как её нарисовать
+    // The local player's model turned toward the cursor; the platform decides how to draw it
+    default void drawPlayerPreview(int x1, int y1, int x2, int y2, int scale, double mouseX, double mouseY) {}
+
+    // ---------- Картинки и предметы / Images and items ----------
+
+    default void drawImage(UiImage image, int x, int y, int width, int height) {}
+
+    // Предмет 16x16; decorations = количество и полоса прочности / A 16x16 item; decorations = the count and the durability bar
+    default void drawItem(UiItem item, int x, int y, boolean decorations) {}
+
+    // Полная подсказка предмета, как в игре / The full item tooltip, as in the game
+    default void drawItemTooltip(UiItem item, int mouseX, int mouseY) {}
+
     // Контур толщиной thickness внутрь от границы / An outline of the given thickness going inward from the bounds
     default void strokeRounded(float x1, float y1, float x2, float y2, float radius, float thickness, int argb) {
         int t = Math.max(1, Math.round(thickness));

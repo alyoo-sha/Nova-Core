@@ -1,6 +1,7 @@
 package org.mod.nova_core.ui.dnd;
 
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.graphics.Draw;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.style.FieldStyle;
 import org.mod.nova_core.ui.style.Styles;
@@ -68,6 +69,7 @@ public class DropZone extends Widget {
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         if (!frame) return;
         FieldStyle s = style.get();
+        Draw.box(g, absX(), absY(), getWidth(), getHeight(), s.radius(), s.background(), s.border(), 1);
         int ax = absX();
         int ay = absY();
         g.fill(ax, ay, ax + getWidth(), ay + getHeight(), s.border());
@@ -87,13 +89,8 @@ public class DropZone extends Widget {
         int w = getWidth();
         int h = getHeight();
 
-        if (over) g.fill(ax, ay, ax + w, ay + h, s.selection());
-
+        if (over) g.fillRounded(ax, ay, ax + w, ay + h, s.radius(), s.selection());
         int c = over ? s.focusedBorder() : s.selection();
-        int t = 2;
-        g.fill(ax, ay, ax + w, ay + t, c);
-        g.fill(ax, ay + h - t, ax + w, ay + h, c);
-        g.fill(ax, ay + t, ax + t, ay + h - t, c);
-        g.fill(ax + w - t, ay + t, ax + w, ay + h - t, c);
+        g.strokeRounded(ax, ay, ax + w, ay + h, s.radius(), 2f, c);
     }
 }

@@ -1,4 +1,4 @@
-package org.mod.nova_core.ui.minecraft.demo;
+package org.mod.nova_core.menu.minecraft;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
@@ -9,9 +9,9 @@ import org.mod.nova_core.ui.api.ArrowWidget;
 import org.mod.nova_core.ui.api.ButtonWidget;
 import org.mod.nova_core.ui.api.Panel;
 import org.mod.nova_core.ui.minecraft.McText;
-import org.mod.nova_core.ui.minecraft.container.NovaContainerScreen;
+import org.mod.nova_core.ui.minecraft.container.NovaMachineScreen;
 
-public class NovaWorkbenchScreen extends NovaContainerScreen<NovaWorkbenchMenu> {
+public class NovaWorkbenchScreen extends NovaMachineScreen<NovaWorkbenchMenu> {
     public NovaWorkbenchScreen(NovaWorkbenchMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
     }

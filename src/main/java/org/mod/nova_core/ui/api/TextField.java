@@ -38,6 +38,8 @@ public class TextField extends Widget {
     // Сдвиг текста влево в пикселях / Leftward text shift in pixels
     private int scrollX = 0;
     private boolean dragging = false;
+    private long lastClickNanos = 0L;
+    private int lastClickIndex = -1;
     private long blinkStart = System.currentTimeMillis();
 
     public TextField(int x, int y, int width, int height) {
@@ -132,7 +134,7 @@ public class TextField extends Widget {
     private boolean caretVisible() { return ((System.currentTimeMillis() - blinkStart) / 530L) % 2L == 0L; }
 
     private void moveCaret(int pos, boolean extend) {
-        caret = Math.max(0, Math.min(pos, text.peek().length()));
+        caret = snap(pos, pos >= caret);
         if (!extend) anchor = caret;
         resetBlink();
     }
@@ -155,12 +157,36 @@ public class TextField extends Widget {
         resetBlink();
     }
 
+    // Не разрывать суррогатные пары (символы вне BMP, например эмодзи)
+    // Never split surrogate pairs (characters outside the BMP, e.g. emoji)
+    private int snap(int pos, boolean forward) {
+        String v = text.peek();
+        int p = Math.max(0, Math.min(pos, v.length()));
+        if (p > 0 && p < v.length() && Character.isLowSurrogate(v.charAt(p)) && Character.isHighSurrogate(v.charAt(p - 1))) {
+            return forward ? p + 1 : p - 1;
+        }
+        return p;
+    }
+
     private void deleteRange(int from, int to) {
+        from = snap(from, false);
+        to = snap(to, true);
         if (from >= to) return;
         String value = text.peek();
         caret = from;
         anchor = from;
         text.set(value.substring(0, from) + value.substring(to));
+        resetBlink();
+    }
+
+    private void selectWordAt(int idx) {
+        String v = text.peek();
+        int start = idx;
+        while (start > 0 && v.charAt(start - 1) != ' ') start--;
+        int end = idx;
+        while (end < v.length() && v.charAt(end) != ' ') end++;
+        anchor = snap(start, false);
+        caret = snap(end, true);
         resetBlink();
     }
 
@@ -270,8 +296,19 @@ public class TextField extends Widget {
     protected void onPointerDown(PointerEvent e) {
         if (e.getButton() != MouseButton.LEFT) return;
         clampCaret();
-        moveCaret(indexAt(e.getX()), false);
-        dragging = true;
+        int idx = indexAt(e.getX());
+        long now = System.nanoTime();
+        boolean doubleClick = idx == lastClickIndex && now - lastClickNanos < 350_000_000L;
+        lastClickIndex = idx;
+        lastClickNanos = now;
+        if (doubleClick) {
+            selectWordAt(idx);
+            lastClickIndex = -1;
+            dragging = false;
+        } else {
+            moveCaret(idx, false);
+            dragging = true;
+        }
         e.stopPropagation();
     }
 

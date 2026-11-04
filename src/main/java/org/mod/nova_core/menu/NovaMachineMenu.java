@@ -7,6 +7,9 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.HashSet;
+import java.util.Set;
+
 // Меню механизма: сначала слоты механизма, затем 36 слотов инвентаря игрока в позициях MachineLayout.
 // В конструкторе потомка: добавьте слоты механизма, затем вызовите addPlayerInventory
 // A machine menu: machine slots first, then the 36 player inventory slots at MachineLayout positions.
@@ -14,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 public abstract class NovaMachineMenu extends AbstractContainerMenu {
     private final MachineLayout layout;
     private int machineSlotCount = -1;
+    private final Set<Integer> outputSlots = new HashSet<>();
 
     protected NovaMachineMenu(MenuType<?> type, int containerId, MachineLayout layout) {
         super(type, containerId);
@@ -34,6 +38,17 @@ public abstract class NovaMachineMenu extends AbstractContainerMenu {
         for (int col = 0; col < 9; col++) {
             addSlot(new Slot(inventory, col, layout.inventoryX(col), layout.hotbarY()));
         }
+    }
+
+    // Слот результата: рисуется большой рамкой и считается выходным / A result slot: drawn with a large frame and counted as an output
+    protected final Slot addOutputSlot(Slot slot) {
+        addSlot(slot);
+        outputSlots.add(slot.index);
+        return slot;
+    }
+
+    public boolean isOutputSlot(Slot slot) {
+        return outputSlots.contains(slot.index);
     }
 
     // Shift+клик: из механизма в инвентарь, из инвентаря в механизм, иначе между основным и хотбаром

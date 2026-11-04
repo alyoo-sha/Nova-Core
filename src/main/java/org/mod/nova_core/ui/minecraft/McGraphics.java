@@ -9,11 +9,12 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
-import org.mod.nova_core.ui.graphics.UiGraphics;
-import org.mod.nova_core.ui.graphics.UiText;
+import org.mod.nova_core.ui.graphics.*;
 
 import java.util.ArrayDeque;
 
@@ -266,6 +267,48 @@ public final class McGraphics implements UiGraphics {
         int c = gradientAt(x, y);
         int a = Math.round(((c >>> 24) & 0xFF) * alphaScale);
         bb.vertex(m, x, y, 0f).color((c >> 16) & 0xFF, (c >> 8) & 0xFF, c & 0xFF, a).endVertex();
+    }
+
+    @Override
+    public void drawPlayerPreview(int x1, int y1, int x2, int y2, int scale, double mouseX, double mouseY) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        delegate.flush(); // сначала дорисовать всё накопленное / first finish everything pending
+        int cx = (x1 + x2) / 2;
+        int feetY = y2 - 6;
+        // Как в ванильном инвентаре: аргументы мыши заданы относительно точки модели
+        // As in the vanilla inventory: the mouse arguments are relative to the model's point
+        InventoryScreen.renderEntityInInventoryFollowsMouse(delegate, cx, feetY, scale,
+                (float) (cx - mouseX), (float) (feetY - 50 - mouseY), mc.player);
+    }
+
+    @Override
+    public void drawImage(UiImage image, int x, int y, int width, int height) {
+        if (opacity <= 0f) return;
+        delegate.flush();
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1f, 1f, 1f, opacity); // прозрачность действует на текстуры / opacity applies to textures
+        if (image instanceof McSprite s) {
+            delegate.blit(x, y, 0, width, height, s.sprite());
+        } else if (image instanceof UiTexture t) {
+            delegate.blit(new ResourceLocation(t.location()), x, y, width, height,
+                    t.u(), t.v(), t.regionWidth(), t.regionHeight(), t.textureWidth(), t.textureHeight());
+        }
+        RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+        RenderSystem.disableBlend();
+    }
+
+    @Override
+    public void drawItem(UiItem item, int x, int y, boolean decorations) {
+        if (!(item instanceof McItem m) || m.stack().isEmpty()) return;
+        delegate.renderItem(m.stack(), x, y);
+        if (decorations) delegate.renderItemDecorations(Minecraft.getInstance().font, m.stack(), x, y);
+    }
+
+    @Override
+    public void drawItemTooltip(UiItem item, int mouseX, int mouseY) {
+        if (!(item instanceof McItem m) || m.stack().isEmpty()) return;
+        delegate.renderTooltip(Minecraft.getInstance().font, m.stack(), mouseX, mouseY);
     }
 
     private void begin3d() {

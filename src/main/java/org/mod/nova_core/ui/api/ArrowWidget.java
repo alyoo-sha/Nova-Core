@@ -8,6 +8,8 @@ import org.mod.nova_core.ui.style.Styles;
 import org.mod.nova_core.ui.style.TextStyle;
 import org.mod.nova_core.ui.theme.StyleRef;
 
+import java.util.function.Supplier;
+
 // Стрелка-индикатор прогресса механизма / A machine progress arrow
 public class ArrowWidget extends Widget {
     public static final int WIDTH = 22;
@@ -16,6 +18,8 @@ public class ArrowWidget extends Widget {
     private final StyleRef<TextStyle> baseStyle = new StyleRef<>(Styles.TEXT);
     private final StyleRef<SliderStyle> fillStyle = new StyleRef<>(Styles.SLIDER);
     private float progress = 0f;
+    // Если задан, опрашивается каждый кадр вместо progress / If set, polled every frame instead of progress
+    private Supplier<Float> source = null;
 
     public ArrowWidget(int x, int y) {
         super(x, y, WIDTH, HEIGHT);
@@ -28,8 +32,14 @@ public class ArrowWidget extends Widget {
     }
 
     // Прогресс 0..1 из сигнала, пока виджет смонтирован / Progress 0..1 from a signal while the widget is mounted
-    public ArrowWidget bindProgress(ReadableSignal<Float> source) {
-        bind(source, p -> setProgress(p));
+    public ArrowWidget bindProgress(ReadableSignal<Float> signal) {
+        bind(signal, p -> setProgress(p));
+        return this;
+    }
+
+    // Прогресс 0..1, который опрашивается каждый кадр (удобно для данных меню) / Progress 0..1 polled every frame (handy for menu data)
+    public ArrowWidget setProgressSource(Supplier<Float> source) {
+        this.source = source;
         return this;
     }
 
@@ -37,9 +47,10 @@ public class ArrowWidget extends Widget {
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         int ax = absX();
         int ay = absY();
+        float p = source != null ? Math.max(0f, Math.min(1f, source.get())) : progress;
         shape(g, ax, ay, (baseStyle.get().color() & 0xFFFFFF) | 0x50000000);
-        if (progress > 0f) {
-            g.pushClip(ax, ay, ax + Math.round(WIDTH * progress), ay + HEIGHT);
+        if (p > 0f) {
+            g.pushClip(ax, ay, ax + Math.round(WIDTH * p), ay + HEIGHT);
             shape(g, ax, ay, fillStyle.get().fill());
             g.popClip();
         }

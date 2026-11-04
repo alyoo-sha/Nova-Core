@@ -1,15 +1,6 @@
 package org.mod.nova_core.ui.theme;
 
-import org.mod.nova_core.ui.style.ButtonStyle;
-import org.mod.nova_core.ui.style.FieldStyle;
-import org.mod.nova_core.ui.style.Gradient;
-import org.mod.nova_core.ui.style.PanelStyle;
-import org.mod.nova_core.ui.style.ScrollbarStyle;
-import org.mod.nova_core.ui.style.SliderStyle;
-import org.mod.nova_core.ui.style.SlotStyle;
-import org.mod.nova_core.ui.style.Styles;
-import org.mod.nova_core.ui.style.TextStyle;
-import org.mod.nova_core.ui.style.TooltipStyle;
+import org.mod.nova_core.ui.style.*;
 
 import java.util.List;
 
@@ -37,6 +28,8 @@ public final class Themes {
                     4, 20, false, 4))
             .set(Styles.SLIDER, new SliderStyle(0x66141B28, 0xFF7AA2F0, 0xFFE8EEF8, 0xFFFFFFFF, 4, 8, 14, 2))
             .set(Styles.SLOT, new SlotStyle(0x55141B28, 0x00000000, 0xFFD8B24A, 3, 0.5f))
+            .set(Styles.BACKDROP, new BackdropStyle(
+                    new Gradient(0xD00A1220, 0xD0101B30, 0xD0121A2C, 0xD00C1526)))
             .build();
 
     // Пустая тема: все стили берутся из значений по умолчанию их ключей / An empty theme: every style comes from its key's default

@@ -2,7 +2,10 @@ package org.mod.nova_core.ui.api;
 
 import org.mod.nova_core.ui.collection.ItemAdapter;
 import org.mod.nova_core.ui.collection.ItemSource;
+import org.mod.nova_core.ui.collection.MultiSelection;
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.dnd.DragLayer;
+import org.mod.nova_core.ui.dnd.DragSession;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.input.KeyboardEvent;
 import org.mod.nova_core.ui.input.Keys;
@@ -58,6 +61,9 @@ public class VirtualGrid<T> extends Widget {
     private int lastCellWidth = -1;
     private int lastClickIndex = -1;
     private long lastClickNanos = 0L;
+
+    private MultiSelection multi = null;
+    private boolean showInsertion = false;
 
     public VirtualGrid(int x, int y, int width, int height, ItemSource<T> source, ItemAdapter<T> adapter) {
         this(x, y, width, height, source, adapter, Signal.of(-1));
@@ -129,6 +135,72 @@ public class VirtualGrid<T> extends Widget {
 
     @Override
     public boolean isFocusable() { return true; }
+
+    private boolean isSelected(int index) {
+        return index == selected.peek() || (multi != null && multi.contains(index));
+    }
+
+    // Мультивыбор: Ctrl переключает, Shift выбирает диапазон, Ctrl+A всё. Основной выбор остаётся последним кликом
+    // Multi-selection: Ctrl toggles, Shift selects a range, Ctrl+A everything. The primary selection stays the last click
+    public VirtualGrid<T> setMultiSelection(MultiSelection model) {
+        this.multi = model;
+        if (model != null) bind(model.changes(), v -> rebindAll());
+        return this;
+    }
+
+    public MultiSelection getMultiSelection() { return multi; }
+
+    // Рисовать линию места вставки, пока над сеткой несут элемент / Draw the insertion line while an item is dragged over the grid
+    public VirtualGrid<T> setShowInsertionIndicator(boolean show) {
+        this.showInsertion = show;
+        return this;
+    }
+
+    // Индекс, перед которым встал бы элемент, сброшенный в точке (экранные координаты). Для списка граница строк,
+    // для сетки середина ячейки
+    // The index before which an item dropped at the point (screen coordinates) would go. For a list the row boundary,
+    // for a grid the middle of a cell
+    public int insertionIndexAt(double mx, double my) {
+        int n = source.size();
+        if (n == 0) return 0;
+        double lx = mx - content.absX();
+        double ly = my - content.absY();
+        int cols = columns();
+        int cw = cellWidthFor(cols);
+        int strideX = cw + gap;
+        int strideY = cellHeight + gap;
+        int row = (int) Math.floor(ly / strideY);
+        int idx;
+        if (cols == 1) {
+            idx = row + (ly - row * strideY > cellHeight / 2.0 ? 1 : 0);
+        } else {
+            int col = (int) Math.floor(lx / strideX);
+            idx = row * cols + col + (lx - col * strideX > cw / 2.0 ? 1 : 0);
+        }
+        return Math.max(0, Math.min(idx, n));
+    }
+
+    private void drawInsertion(UiGraphics g) {
+        DragSession session = DragLayer.of(this).session();
+        if (session == null || !contains(session.x(), session.y())) return;
+
+        int idx = insertionIndexAt(session.x(), session.y());
+        int cols = columns();
+        int cw = cellWidthFor(cols);
+        int half = gap / 2;
+        int color = fieldStyle.get().focusedBorder();
+
+        g.pushClip(absX(), absY(), absX() + getWidth(), absY() + getHeight());
+        if (cols == 1) {
+            int y = content.absY() + idx * (cellHeight + gap) - half;
+            g.fill(content.absX(), y - 1, content.absX() + content.getWidth(), y + 1, color);
+        } else {
+            int x = content.absX() + (idx % cols) * (cw + gap) - half;
+            int y = content.absY() + (idx / cols) * (cellHeight + gap);
+            g.fill(x - 1, y, x + 1, y + cellHeight, color);
+        }
+        g.popClip();
+    }
 
     // ---------- Выбор / Selection ----------
 
@@ -244,7 +316,7 @@ public class VirtualGrid<T> extends Widget {
         content.add(view);
         realized.put(index, view);
         place(index, view, cols, cw);
-        adapter.bind(view, source.get(index), index, index == selected.peek());
+        adapter.bind(view, source.get(index), index, isSelected(index));
         // Сразу раскладываем, чтобы ячейка не мелькнула нераскладенной / Lay out right away so the cell never flashes unlaid
         view.performLayout(Constraints.tight(view.getWidth(), view.getHeight()));
     }
@@ -267,6 +339,7 @@ public class VirtualGrid<T> extends Widget {
     // Содержимое источника изменилось / The source content changed
     private void refreshAll() {
         int n = source.size();
+        if (multi != null) multi.retainBelow(n);
         if (selected.peek() >= n) selected.set(n - 1); // при пустом списке получится -1 / becomes -1 for an empty list
 
         scratch.clear();
@@ -278,11 +351,10 @@ public class VirtualGrid<T> extends Widget {
     }
 
     private void rebindAll() {
-        int sel = selected.peek();
         for (Map.Entry<Integer, Widget> entry : realized.entrySet()) {
             int index = entry.getKey();
             Widget view = entry.getValue();
-            adapter.bind(view, source.get(index), index, index == sel);
+            adapter.bind(view, source.get(index), index, isSelected(index));
             view.performLayout(Constraints.tight(view.getWidth(), view.getHeight()));
         }
     }
@@ -297,6 +369,7 @@ public class VirtualGrid<T> extends Widget {
     // Рамка фокуса поверх всего / The focus frame above everything
     @Override
     protected void renderOverlay(UiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (showInsertion) drawInsertion(g);
         if (!isFocused()) return;
         int c = fieldStyle.get().focusedBorder();
         int ax = absX();
@@ -324,8 +397,11 @@ public class VirtualGrid<T> extends Widget {
         lastClickIndex = index;
         lastClickNanos = now;
 
+        boolean ctrl = e.hasModifier(Keys.MOD_CONTROL | Keys.MOD_SUPER);
+        boolean shift = e.hasModifier(Keys.MOD_SHIFT);
+        if (multi != null) multi.click(index, ctrl, shift);
         setSelectedIndex(index);
-        if (doubleClick) {
+        if (doubleClick && !ctrl && !shift) {
             lastClickIndex = -1;
             onActivate.accept(index);
         }
@@ -336,6 +412,12 @@ public class VirtualGrid<T> extends Widget {
     protected void onKeyDown(KeyboardEvent e) {
         int n = source.size();
         if (n == 0) return;
+
+        if (multi != null && e.getKey() == Keys.A && e.hasModifier(Keys.MOD_CONTROL | Keys.MOD_SUPER)) {
+            multi.selectAll(n);
+            e.stopPropagation();
+            return;
+        }
 
         int key = e.getKey();
         int cols = columns();
@@ -369,6 +451,7 @@ public class VirtualGrid<T> extends Widget {
         }
 
         target = Math.max(0, Math.min(target, n - 1));
+        if (multi != null) multi.click(target, false, e.hasModifier(Keys.MOD_SHIFT));
         setSelectedIndex(target);
         scrollToIndex(target);
         e.stopPropagation();
