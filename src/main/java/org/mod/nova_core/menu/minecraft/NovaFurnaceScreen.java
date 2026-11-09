@@ -7,6 +7,7 @@ import org.mod.nova_core.menu.MachineLayout;
 import org.mod.nova_core.ui.api.ArrowWidget;
 import org.mod.nova_core.ui.api.Panel;
 import org.mod.nova_core.ui.api.ProgressBar;
+import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.minecraft.vanilla.NovaVanillaScreen;
 
 public class NovaFurnaceScreen extends NovaVanillaScreen<AbstractFurnaceMenu> {
@@ -14,6 +15,11 @@ public class NovaFurnaceScreen extends NovaVanillaScreen<AbstractFurnaceMenu> {
 
     public NovaFurnaceScreen(AbstractFurnaceMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, LAYOUT);
+    }
+
+    @Override
+    protected void buildExtras(Widget root) {
+        installRecipeBook(root, menu);
     }
 
     // Слоты: 0 исходник, 1 топливо, 2 результат / Slots: 0 input, 1 fuel, 2 result

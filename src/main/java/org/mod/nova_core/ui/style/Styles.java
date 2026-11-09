@@ -23,6 +23,8 @@ public final class Styles {
             StyleKey.of("nova_core:slot", SlotStyle.class, SlotStyle.DEFAULT);
     public static final StyleKey<BackdropStyle> BACKDROP =
             StyleKey.of("nova_core:backdrop", BackdropStyle.class, BackdropStyle.DEFAULT);
+    public static final StyleKey<FontStyle> FONT =
+            StyleKey.of("nova_core:font", FontStyle.class, FontStyle.DEFAULT);
 
     private Styles() {}
 }

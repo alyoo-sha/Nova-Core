@@ -117,9 +117,31 @@ public final class DebugLayer extends Widget {
             if (sel != null) UiContext.platform().setClipboard(String.join("\n", WidgetInfo.lines(sel)));
             return true;
         }
+        // Правка выбранного: Alt+Shift+стрелки двигают, Alt+Ctrl+стрелки меняют размер, Alt+[ и Alt+] прозрачность
+        // Editing the selected one: Alt+Shift+arrows move, Alt+Ctrl+arrows resize, Alt+[ and Alt+] opacity
+        if (sel != null && edit(sel, key, shift, ctrl)) return true;
         if (key == Keys.UP || key == Keys.DOWN || key == Keys.LEFT || key == Keys.RIGHT) {
             Widget next = sel == null ? null : relative(sel, key);
             if (next != null) locked = next;
+            return true;
+        }
+        return false;
+    }
+
+    private boolean edit(Widget w, int key, boolean shift, boolean ctrl) {
+        int dx = key == Keys.LEFT ? -1 : key == Keys.RIGHT ? 1 : 0;
+        int dy = key == Keys.UP ? -1 : key == Keys.DOWN ? 1 : 0;
+        if ((dx != 0 || dy != 0) && shift) {
+            w.moveTo(w.getX() + dx, w.getY() + dy);
+            return true;
+        }
+        if ((dx != 0 || dy != 0) && ctrl) {
+            w.setSize(Math.max(0, w.getWidth() + dx), Math.max(0, w.getHeight() + dy));
+            return true;
+        }
+        if (key == Keys.LEFT_BRACKET || key == Keys.RIGHT_BRACKET) {
+            float step = key == Keys.RIGHT_BRACKET ? 0.1f : -0.1f;
+            w.setOpacity(Math.round((w.getOpacity() + step) * 10f) / 10f);
             return true;
         }
         return false;

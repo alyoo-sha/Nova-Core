@@ -6,6 +6,7 @@ import net.minecraft.world.inventory.CraftingMenu;
 import org.mod.nova_core.menu.MachineLayout;
 import org.mod.nova_core.ui.api.ArrowWidget;
 import org.mod.nova_core.ui.api.Panel;
+import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.minecraft.vanilla.NovaVanillaScreen;
 
 public class NovaCraftingScreen extends NovaVanillaScreen<CraftingMenu> {
@@ -13,6 +14,11 @@ public class NovaCraftingScreen extends NovaVanillaScreen<CraftingMenu> {
 
     public NovaCraftingScreen(CraftingMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, LAYOUT);
+    }
+
+    @Override
+    protected void buildExtras(Widget root) {
+        installRecipeBook(root, menu);
     }
 
     // Слоты: 0 результат, 1..9 сетка 3x3 / Slots: 0 result, 1..9 the 3x3 grid

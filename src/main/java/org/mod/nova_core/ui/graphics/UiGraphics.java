@@ -47,6 +47,9 @@ public interface UiGraphics {
     // Полная подсказка предмета, как в игре / The full item tooltip, as in the game
     default void drawItemTooltip(UiItem item, int mouseX, int mouseY) {}
 
+    // Карта (предмет) в квадрате size x size / A map item in a size x size square
+    default void drawMapPreview(UiItem map, int x, int y, int size) {}
+
     // Контур толщиной thickness внутрь от границы / An outline of the given thickness going inward from the bounds
     default void strokeRounded(float x1, float y1, float x2, float y2, float radius, float thickness, int argb) {
         int t = Math.max(1, Math.round(thickness));

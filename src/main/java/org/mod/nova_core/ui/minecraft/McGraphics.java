@@ -12,7 +12,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.MapItem;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import org.joml.Matrix4f;
 import org.mod.nova_core.Nova_core;
 import org.mod.nova_core.ui.graphics.*;
@@ -75,13 +78,13 @@ public final class McGraphics implements UiGraphics {
         Font font = Minecraft.getInstance().font;
         Component component = McText.toComponent(text);
 
-        // Встроенная тень сдвигает основной текст по глубине (z + 0.03), и позже нарисованные заливки его не закрывают.
-        // Поэтому тень рисуем сами: тот же цвет, затемнённый до четверти, со сдвигом (1, 1), всё на одной глубине.
-        // The built-in shadow moves the main text in depth (z + 0.03), and later fills do not cover it.
-        // So we draw the shadow ourselves: the same color dimmed to a quarter, offset by (1, 1), all at one depth.
+        // Тень рисуем сами (встроенная сдвигает текст по глубине): затемнённая копия со сдвигом (1, 1), шрифт тот же
+        // We draw the shadow ourselves (the built-in one shifts the text in depth): a dimmed copy offset by (1, 1), the same font
         if (shadow) {
             int shadowColor = ((c & 0xFCFCFC) >> 2) | (c & 0xFF000000);
-            delegate.drawString(font, Component.literal(component.getString()), x + 1, y + 1, shadowColor, false);
+            Component shadowText = Component.literal(component.getString())
+                    .withStyle(Style.EMPTY.withFont(component.getStyle().getFont()));
+            delegate.drawString(font, shadowText, x + 1, y + 1, shadowColor, false);
         }
         delegate.drawString(font, component, x, y, c, false);
     }
@@ -281,6 +284,24 @@ public final class McGraphics implements UiGraphics {
         // As in the vanilla inventory: the mouse arguments are relative to the model's point
         InventoryScreen.renderEntityInInventoryFollowsMouse(delegate, cx, feetY, scale,
                 (float) (cx - mouseX), (float) (feetY - 50 - mouseY), mc.player);
+    }
+
+    @Override
+    public void drawMapPreview(UiItem map, int x, int y, int size) {
+        if (!(map instanceof McItem m) || m.stack().isEmpty()) return;
+        Minecraft mc = Minecraft.getInstance();
+        Integer id = MapItem.getMapId(m.stack());
+        if (id == null || mc.level == null) return;
+        MapItemSavedData data = MapItem.getSavedData(id, mc.level);
+        if (data == null) return;
+        delegate.flush();
+        delegate.pose().pushPose();
+        delegate.pose().translate((float) x, (float) y, 1.0F);
+        float scale = size / 128f;
+        delegate.pose().scale(scale, scale, 1.0F);
+        mc.gameRenderer.getMapRenderer().render(delegate.pose(), delegate.bufferSource(), id, data, true, 15728880);
+        delegate.flush();
+        delegate.pose().popPose();
     }
 
     @Override

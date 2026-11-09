@@ -9,13 +9,48 @@
   "key.nova_core.open_collections_demo": "Открыть демо коллекций",
   "key.nova_core.open_dnd_demo": "Открыть демо перетаскивания",
   "key.nova_core.open_form_demo": "Открыть демо формы",
+  "key.nova_core.open_limits_demo": "Открыть демо новых возможностей",
+
   "menu.nova_core.workbench": "Верстак",
   "menu.nova_core.workbench.clear": "Очистить",
+
   "nova_core.creative.search": "Поиск...",
   "nova_core.creative.hotbar": "Хотбар",
   "nova_core.creative.recent": "Недавние",
   "nova_core.creative.results": "Результаты поиска",
-  "nova_core.creative.time": "Время: %s",
-  "nova_core.creative.gamemode": "Режим игры: %s",
-  "nova_core.creative.weather": "Погода: %s"
+  "nova_core.creative.minecraft": "Minecraft",
+  "nova_core.creative.other_mods": "Другие моды",
+  "nova_core.creative.save": "Сохр.",
+  "nova_core.creative.load": "Загр.",
+
+  "nova_core.world.time.day": "День. Нажмите, чтобы сделать ночь",
+  "nova_core.world.time.night": "Ночь. Нажмите, чтобы сделать день",
+  "nova_core.world.mode.creative": "Творческий режим. Нажмите для выживания",
+  "nova_core.world.mode.survival": "Режим выживания. Нажмите для творческого",
+  "nova_core.world.weather.clear": "Ясно. Нажмите, чтобы включить дождь",
+  "nova_core.world.weather.rain": "Дождь. Нажмите, чтобы прояснить",
+
+  "nova_core.recipes.all": "Все рецепты",
+  "nova_core.recipes.locked": "Рецепт ещё не открыт",
+  "nova_core.recipes.no_fit": "Не помещается в сетку. Нужен верстак",
+  "nova_core.recipes": "Рецепты",
+  "nova_core.recipes.short": "Книга",
+  "nova_core.recipes.craftable": "Можно скрафтить",
+
+  "nova_core.tab.minecraft.building_blocks": "Строительные",
+  "nova_core.tab.minecraft.colored_blocks": "Цветные",
+  "nova_core.tab.minecraft.natural_blocks": "Природные",
+  "nova_core.tab.minecraft.functional_blocks": "Функциональные",
+  "nova_core.tab.minecraft.redstone_blocks": "Редстоун",
+  "nova_core.tab.minecraft.tools_and_utilities": "Инструменты",
+  "nova_core.tab.minecraft.combat": "Бой",
+  "nova_core.tab.minecraft.food_and_drinks": "Еда и напитки",
+  "nova_core.tab.minecraft.ingredients": "Ингредиенты",
+  "nova_core.tab.minecraft.spawn_eggs": "Яйца призыва",
+  "nova_core.tab.minecraft.op_blocks": "Админ-блоки",
+  "nova_core.tab.minecraft.inventory": "Инвентарь",
+  "nova_core.tab.minecraft.hotbar": "Хотбары",
+
+  "nova_core.title.container.crafting": "Создание",
+  "nova_core.title.container.inventory": "Инвентарь"
 }

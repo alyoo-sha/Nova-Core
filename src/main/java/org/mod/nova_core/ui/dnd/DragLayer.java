@@ -3,6 +3,7 @@ package org.mod.nova_core.ui.dnd;
 import org.mod.nova_core.ui.api.ScrollView;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.graphics.UiGraphics;
+import org.mod.nova_core.ui.input.Keys;
 import org.mod.nova_core.ui.input.MouseButton;
 import org.mod.nova_core.ui.layout.Constraints;
 import org.mod.nova_core.ui.layout.SizeMode;
@@ -37,6 +38,7 @@ public final class DragLayer extends Widget {
     private int grabX = 0;
     private int grabY = 0;
     private boolean centered = true;
+    private boolean keyboardDrag = false;
     private DropTarget hoveredTarget = null;
     private double pointerX = 0;
     private double pointerY = 0;
@@ -190,6 +192,7 @@ public final class DragLayer extends Widget {
     }
 
     private void finish(boolean dropped, boolean immediate) {
+        keyboardDrag = false;
         DragSession s = session;
         if (s == null) return;
         DragSource src = activeSource;
@@ -242,5 +245,82 @@ public final class DragLayer extends Widget {
         int py = (int) Math.round(pointerY);
         if (centered) ghost.setPosition(px - ghost.getWidth() / 2, py - ghost.getHeight() / 2);
         else ghost.setPosition(px - grabX, py - grabY);
+    }
+
+    // ---------- Перенос с клавиатуры / Keyboard drag ----------
+
+    public boolean isKeyboardDrag() { return keyboardDrag && session != null; }
+
+    // Начать перенос с виджета, у которого (или у предка) есть источник; курсор ставится в его центр
+    // Start a drag from a widget that (or whose ancestor) has a source; the cursor goes to its center
+    public boolean startKeyboardDrag(Widget from) {
+        if (session != null) return false;
+        for (Widget w = from; w != null; w = w.getParent()) {
+            Dnd.Binding<DragSource> binding = sources.get(w);
+            if (binding == null || !binding.active) continue;
+            pressX = from.absX() + from.getWidth() / 2.0;
+            pressY = from.absY() + from.getHeight() / 2.0;
+            pointerX = pressX;
+            pointerY = pressY;
+            begin(binding);
+            if (session == null) return false;
+            keyboardDrag = true;
+            update();
+            return true;
+        }
+        return false;
+    }
+
+    // Стрелки переводят «курсор» на ближайшую подходящую цель, Enter или Space бросают, Escape отменяет
+    // The arrows move the "cursor" to the nearest suitable target, Enter or Space drops, Escape cancels
+    public boolean handleKey(int key) {
+        if (!isKeyboardDrag()) return false;
+        if (key == Keys.ESCAPE) {
+            cancel();
+            return true;
+        }
+        if (key == Keys.ENTER || key == Keys.KP_ENTER || key == Keys.SPACE) {
+            DragSession s = session;
+            DropTarget target = hoveredTarget;
+            boolean dropped = target != null;
+            try {
+                if (dropped) target.onDrop(s, pointerX, pointerY);
+            } finally {
+                finish(dropped, false);
+            }
+            return true;
+        }
+        boolean arrow = key == Keys.UP || key == Keys.DOWN || key == Keys.LEFT || key == Keys.RIGHT;
+        if (!arrow) return false;
+        Widget next = pickTarget(key);
+        if (next != null) {
+            pointerX = next.absX() + next.getWidth() / 2.0;
+            pointerY = next.absY() + next.getHeight() / 2.0;
+            update();
+        }
+        return true;
+    }
+
+    private Widget pickTarget(int key) {
+        boolean horizontal = key == Keys.LEFT || key == Keys.RIGHT;
+        double sign = (key == Keys.RIGHT || key == Keys.DOWN) ? 1.0 : -1.0;
+        Widget best = null;
+        double bestScore = Double.MAX_VALUE;
+        for (Map.Entry<Widget, Dnd.Binding<DropTarget>> entry : targets.entrySet()) {
+            Widget w = entry.getKey();
+            Dnd.Binding<DropTarget> b = entry.getValue();
+            if (!b.active || !w.isMounted() || !w.isVisible() || !b.value.canAccept(session)) continue;
+            double dx = w.absX() + w.getWidth() / 2.0 - pointerX;
+            double dy = w.absY() + w.getHeight() / 2.0 - pointerY;
+            double along = sign * (horizontal ? dx : dy);
+            double across = Math.abs(horizontal ? dy : dx);
+            if (along <= 1.0) continue;
+            double score = along + 2.0 * across;
+            if (score < bestScore) {
+                bestScore = score;
+                best = w;
+            }
+        }
+        return best;
     }
 }

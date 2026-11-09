@@ -1,104 +1,79 @@
 package org.mod.nova_core.menu.minecraft;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.inventory.*;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.flag.FeatureFlagSet;
-import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.GameType;
-import org.mod.nova_core.ui.api.ItemCell;
-import org.mod.nova_core.ui.api.Panel;
-import org.mod.nova_core.ui.api.PlayerPreview;
-import org.mod.nova_core.ui.api.SlotFrame;
-import org.mod.nova_core.ui.api.TextField;
-import org.mod.nova_core.ui.api.TextWidget;
-import org.mod.nova_core.ui.api.VirtualGrid;
-import org.mod.nova_core.ui.api.VirtualList;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.item.*;
+import net.minecraftforge.fml.ModList;
+import org.mod.nova_core.ui.api.*;
 import org.mod.nova_core.ui.collection.ItemAdapter;
 import org.mod.nova_core.ui.collection.ListModel;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.context.UiContext;
-import org.mod.nova_core.ui.graphics.Draw;
-import org.mod.nova_core.ui.graphics.UiGraphics;
-import org.mod.nova_core.ui.graphics.UiText;
-import org.mod.nova_core.ui.input.EventType;
-import org.mod.nova_core.ui.input.MouseButton;
-import org.mod.nova_core.ui.input.PointerEvent;
-import org.mod.nova_core.ui.minecraft.McEffectsBar;
-import org.mod.nova_core.ui.minecraft.McItem;
-import org.mod.nova_core.ui.minecraft.McText;
-import org.mod.nova_core.ui.minecraft.UiHost;
+import org.mod.nova_core.ui.graphics.*;
+import org.mod.nova_core.ui.input.*;
+import org.mod.nova_core.ui.minecraft.*;
 import org.mod.nova_core.ui.minecraft.container.SlotAccess;
 import org.mod.nova_core.ui.overlay.TooltipBubble;
 import org.mod.nova_core.ui.overlay.Tooltips;
 import org.mod.nova_core.ui.state.Signal;
-import org.mod.nova_core.ui.style.ButtonStyle;
-import org.mod.nova_core.ui.style.FieldStyle;
-import org.mod.nova_core.ui.style.SlotStyle;
-import org.mod.nova_core.ui.style.Styles;
+import org.mod.nova_core.ui.style.*;
 import org.mod.nova_core.ui.theme.StyleRef;
-import org.mod.nova_core.ui.theme.ThemeManager;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.*;
 
 public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
     // Размеры окна (GUI-пиксели) / Window size (GUI pixels)
-    private static final int WIDTH = 336;
-    private static final int HEIGHT = 176;
-    private static final int TABS_WIDTH = 88;
+    private static final int WIDTH = 360;
+    private static final int HEIGHT = 200; //176
+    private static final int TABS_WIDTH = 112;
     private static final int X0 = 8 + TABS_WIDTH + 8; // левый край правой части / left edge of the right part
     private static final int GRID_Y = 26;
     private static final int COLUMNS = 12;
     private static final int HOTBAR_Y = 150;
     private static final int OFFSCREEN = -1000;
     private static final int RECENT_SIZE = 3;
-
-    private static final String[] TIMES = {"day", "noon", "night", "midnight"};
-//    private static final String[] TIMES = {"day", "noon", "night", "midnight"};
-    private static final String[] WEATHERS = {"clear", "rain", "thunder"};
-    private static final GameType[] MODES = {GameType.CREATIVE, GameType.SURVIVAL};
-//    private static final GameType[] MODES = {GameType.CREATIVE, GameType.SURVIVAL, GameType.ADVENTURE, GameType.SPECTATOR};
-    private static int timeIndex = 0;
-    private static int weatherIndex = 0;
+    private static final int SEARCH_WIDTH = 92;
+    private static final int TITLE_WIDTH = WIDTH - X0 - 8 - SEARCH_WIDTH - 6;
 
     // Живут между открытиями окна / They live between window openings
     private static CreativeModeTab lastTab = null;
     private static final List<ItemStack> RECENT = new ArrayList<>();
+
+    // Вкладка или заголовок группы в списке слева / A tab or a group header in the list on the left
+    private record TabEntry(CreativeModeTab tab, UiText header) {
+        boolean isHeader() { return tab == null; }
+    }
 
     private final UiHost host = new UiHost(this::buildTree, () -> null);
     private final FeatureFlagSet features;
     private final boolean operatorTab;
 
     // Состояние живёт в экране, а не в buildTree: дерево пересобирается при ресайзе / State lives in the screen, not in buildTree: the tree rebuilds on resize
-    private final ListModel<CreativeModeTab> tabs = new ListModel<>();
+    private final ListModel<TabEntry> entries = new ListModel<>();
     private final Signal<Integer> tabIndex = Signal.of(0);
     private final Signal<String> query = Signal.of("");
     private final ListModel<ItemStack> items = new ListModel<>();
     private final Signal<Integer> gridSelection = Signal.of(-1);
+    private final ListModel<Integer> savedRows = new ListModel<>(List.of(0, 1, 2, 3, 4, 5, 6, 7, 8));
+    private final Signal<Integer> savedSelection = Signal.of(-1);
     private final Map<Slot, int[]> originals = new HashMap<>();
 
     private CreativeModeTab current = null;
     private TextWidget titleText = null;
     private VirtualGrid<ItemStack> grid = null;
     private Widget inventoryView = null;
+    private Widget savedView = null;
     private final List<ItemCell> recentCells = new ArrayList<>();
 
     public NovaCreativeScreen(LocalPlayer player, FeatureFlagSet features, boolean operatorTab) {
@@ -120,16 +95,68 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
         super.init();
         CreativeModeTabs.tryRebuildTabContents(features, operatorTab, minecraft.level.registryAccess());
 
-        List<CreativeModeTab> visible = new ArrayList<>();
-        for (CreativeModeTab t : CreativeModeTabs.tabs()) {
-            if (t.getType() == CreativeModeTab.Type.CATEGORY || t.getType() == CreativeModeTab.Type.INVENTORY) visible.add(t);
-        }
-        tabs.setAll(visible);
-        int start = Math.max(0, lastTab == null ? 0 : visible.indexOf(lastTab));
-        tabIndex.set(start);
-        current = visible.isEmpty() ? null : visible.get(start);
+        entries.setAll(buildEntries());
+        CreativeModeTab wanted = lastTab != null ? lastTab : CreativeModeTabs.getDefaultTab();
+        int start = indexOfTab(wanted);
+        if (start < 0) start = firstTabIndex();
+        tabIndex.set(Math.max(0, start));
+        current = start >= 0 && start < entries.size() ? entries.get(start).tab() : null;
 
         host.init(width, height);
+    }
+
+    // Группы как в SEER: служебные вкладки, Minecraft, моды с несколькими вкладками, «Другие моды» (по одной вкладке)
+    // Groups as in SEER: utility tabs, Minecraft, mods with several tabs, "Other mods" (one tab each)
+    private List<TabEntry> buildEntries() {
+        List<TabEntry> out = new ArrayList<>();
+        List<CreativeModeTab> all = CreativeModeTabs.tabs();
+        for (CreativeModeTab t : all) {
+            if (t.getType() == CreativeModeTab.Type.INVENTORY || t.getType() == CreativeModeTab.Type.HOTBAR) {
+                out.add(new TabEntry(t, null));
+            }
+        }
+
+        Map<String, List<CreativeModeTab>> byMod = new LinkedHashMap<>();
+        for (CreativeModeTab t : all) {
+            if (t.getType() != CreativeModeTab.Type.CATEGORY) continue;
+            ResourceLocation key = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(t);
+            byMod.computeIfAbsent(key == null ? "minecraft" : key.getNamespace(), k -> new ArrayList<>()).add(t);
+        }
+
+        List<CreativeModeTab> singles = new ArrayList<>();
+        for (Map.Entry<String, List<CreativeModeTab>> e : byMod.entrySet()) {
+            boolean vanilla = e.getKey().equals("minecraft");
+            if (vanilla || e.getValue().size() > 1) {
+                UiText fallback = vanilla ? NovaTexts.MINECRAFT : UiText.literal(modName(e.getKey()));
+                out.add(new TabEntry(null, NovaTexts.groupName(e.getKey(), fallback)));
+                for (CreativeModeTab t : e.getValue()) out.add(new TabEntry(t, null));
+            } else {
+                singles.addAll(e.getValue());
+            }
+        }
+        if (!singles.isEmpty()) {
+            out.add(new TabEntry(null, NovaTexts.OTHER_MODS));
+            for (CreativeModeTab t : singles) out.add(new TabEntry(t, null));
+        }
+        return out;
+    }
+
+    private static String modName(String namespace) {
+        return ModList.get().getModContainerById(namespace).map(c -> c.getModInfo().getDisplayName()).orElse(namespace);
+    }
+
+    private int indexOfTab(CreativeModeTab tab) {
+        for (int i = 0; i < entries.size(); i++) {
+            if (entries.get(i).tab() == tab) return i;
+        }
+        return -1;
+    }
+
+    private int firstTabIndex() {
+        for (int i = 0; i < entries.size(); i++) {
+            if (!entries.get(i).isHeader()) return i;
+        }
+        return -1;
     }
 
     private void buildTree(Widget root) {
@@ -141,16 +168,17 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
         panel.setDebugName("creative");
         root.add(panel);
 
-        // Вкладки / Tabs
-        ItemAdapter<CreativeModeTab> tabAdapter = ItemAdapter.<CreativeModeTab, TabCell>of(
-                TabCell::new, (cell, tab, i, sel) -> cell.set(tab, sel));
-        panel.add(new VirtualList<>(8, 8, TABS_WIDTH, HEIGHT - 16, 20, tabs, tabAdapter, tabIndex));
+        // Вкладки по группам / Tabs by groups
+        ItemAdapter<TabEntry> tabAdapter = ItemAdapter.<TabEntry, TabCell>of(
+                TabCell::new, (cell, entry, i, sel) -> cell.set(entry, sel));
+        panel.add(new VirtualList<>(8, 8, TABS_WIDTH, HEIGHT - 16, 20, entries, tabAdapter, tabIndex));
 
-        // Заголовок и поиск / Title and search
-        titleText = new TextWidget(X0, 10, UiText.literal(""));
+        // Заголовок обрезается по ширине, чтобы не наезжать на поиск / The title is clipped by width so it never overlaps the search
+        titleText = new TextWidget(X0, 10, TITLE_WIDTH, 9, UiText.literal("")).setEllipsize(true);
         panel.add(titleText);
-        TextField search = new TextField(WIDTH - 8 - 92, 5, 92, 16, query);
-        search.setPlaceholder(McText.of(Component.translatable("nova_core.creative.search")));
+
+        TextField search = new TextField(WIDTH - 8 - SEARCH_WIDTH, 5, SEARCH_WIDTH, 16, query);
+        search.setPlaceholder(NovaTexts.SEARCH);
         panel.add(search);
 
         // Палитра предметов / The item palette
@@ -168,11 +196,17 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
         inventoryView = buildInventoryView();
         panel.add(inventoryView);
 
+        // Сохранённые хотбары / Saved hotbars
+        ItemAdapter<Integer> savedAdapter = ItemAdapter.<Integer, SavedHotbarRow>of(
+                SavedHotbarRow::new, (row, index, i, sel) -> row.set(index));
+        savedView = new VirtualList<>(X0, GRID_Y, 224, 108, 20, savedRows, savedAdapter, savedSelection);
+        panel.add(savedView);
+
         // Хотбар и недавние / Hotbar and recently used
-        panel.add(new TextWidget(X0, 139, McText.of(Component.translatable("nova_core.creative.hotbar"))));
+        panel.add(new TextWidget(X0, 139, NovaTexts.HOTBAR));
         for (int i = 0; i < 9; i++) frame(panel, X0 + i * 18, HOTBAR_Y - 1);
         int recentX = X0 + 9 * 18 + 8;
-        panel.add(new TextWidget(recentX, 139, McText.of(Component.translatable("nova_core.creative.recent"))));
+        panel.add(new TextWidget(recentX, 139, NovaTexts.RECENT));
         recentCells.clear();
         for (int i = 0; i < RECENT_SIZE; i++) {
             frame(panel, recentX + i * 18, HOTBAR_Y - 1);
@@ -187,22 +221,7 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
         }
         refreshRecent();
 
-        // Кнопки над окном и эффекты под ним / Buttons above the window and effects below it
-        root.add(iconButton(leftPos, topPos - 24, Items.CLOCK,
-                () -> "nova_core.creative.time", () -> TIMES[timeIndex],
-                () -> {
-                    sendCommand("time set " + TIMES[timeIndex]);
-                    timeIndex = (timeIndex + 1) % TIMES.length;
-                }));
-        root.add(iconButton(leftPos + 24, topPos - 24, Items.COMMAND_BLOCK,
-                () -> "nova_core.creative.gamemode", () -> nextMode().getName(),
-                () -> sendCommand("gamemode " + nextMode().getName())));
-        root.add(iconButton(leftPos + 48, topPos - 24, Items.WATER_BUCKET,
-                () -> "nova_core.creative.weather", () -> WEATHERS[weatherIndex],
-                () -> {
-                    sendCommand("weather " + WEATHERS[weatherIndex]);
-                    weatherIndex = (weatherIndex + 1) % WEATHERS.length;
-                }));
+        McWorldButtons.add(root, leftPos, topPos - 24);
         root.add(new McEffectsBar(leftPos, topPos + HEIGHT + 4, WIDTH));
 
         panel.whileMounted(() -> {
@@ -236,23 +255,39 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
     // ---------- Вкладки, поиск, вид / Tabs, search, view ----------
 
     private void onTabIndex(Integer index) {
-        if (index == null || index < 0 || index >= tabs.size()) return;
-        current = tabs.get(index);
+        if (index == null || index < 0 || index >= entries.size()) return;
+        TabEntry entry = entries.get(index);
+        if (entry.isHeader()) { // заголовки не выбираются / headers are not selectable
+            int back = current == null ? -1 : indexOfTab(current);
+            if (back >= 0) tabIndex.set(back);
+            return;
+        }
+        current = entry.tab();
         lastTab = current;
         applyView();
     }
 
+    private boolean searching() {
+        return !query.peek().isBlank();
+    }
+
     private boolean showInventory() {
-        return current != null && current.getType() == CreativeModeTab.Type.INVENTORY && query.peek().isBlank();
+        return current != null && current.getType() == CreativeModeTab.Type.INVENTORY && !searching();
+    }
+
+    private boolean showSaved() {
+        return current != null && current.getType() == CreativeModeTab.Type.HOTBAR && !searching();
     }
 
     private void applyView() {
         boolean inventory = showInventory();
-        if (grid != null) grid.setVisible(!inventory);
+        boolean saved = showSaved();
+        if (grid != null) grid.setVisible(!inventory && !saved);
         if (inventoryView != null) inventoryView.setVisible(inventory);
+        if (savedView != null) savedView.setVisible(saved);
         positionSlots(inventory);
         rebuildItems();
-        updateTitle(inventory);
+        updateTitle(!inventory && !saved);
     }
 
     private void rebuildItems() {
@@ -278,13 +313,23 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
                 || BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath().contains(q);
     }
 
-    private void updateTitle(boolean inventory) {
+    private void updateTitle(boolean palette) {
         if (titleText == null) return;
-        Component name = !query.peek().isBlank() ? Component.translatable("nova_core.creative.results")
-                : current != null ? current.getDisplayName() : Component.empty();
-        MutableComponent title = name.copy().withStyle(ChatFormatting.BOLD);
-        if (!inventory) title.append(Component.literal("  " + items.size()).withStyle(ChatFormatting.GRAY));
-        titleText.setText(McText.of(title));
+        UiText name = searching() ? NovaTexts.RESULTS
+                : current != null ? NovaTexts.tabName(tabKey(current), McText.of(current.getDisplayName()))
+                : UiText.literal("");
+        MutableComponent title = McText.toComponent(name).copy().withStyle(ChatFormatting.BOLD);
+        UiText shown = McText.of(title);
+        if (palette) {
+            UiText counted = McText.of(title.copy().append(Component.literal("  " + items.size()).withStyle(ChatFormatting.GRAY)));
+            if (UiContext.platform().textWidth(counted) <= TITLE_WIDTH) shown = counted;
+        }
+        titleText.setText(shown);
+    }
+
+    private static String tabKey(CreativeModeTab tab) {
+        ResourceLocation id = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(tab);
+        return id == null ? "" : id.toString();
     }
 
     // Слоты инвентаря переставляются под вид; ненужные уходят за экран / The inventory slots are moved to the view; unneeded ones go off screen
@@ -422,24 +467,64 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
         }
     }
 
+    private void dropStack(ItemStack stack) {
+        if (stack.isEmpty()) return;
+        minecraft.player.drop(stack, true);
+        minecraft.gameMode.handleCreativeModeItemDrop(stack);
+    }
+
     private void dropCarried() {
-        ItemStack carried = menu.getCarried();
-        if (carried.isEmpty()) return;
-        minecraft.player.drop(carried, true);
-        minecraft.gameMode.handleCreativeModeItemDrop(carried);
+        dropStack(menu.getCarried());
         menu.setCarried(ItemStack.EMPTY);
     }
 
-    private void sendCommand(String command) {
-        if (minecraft != null && minecraft.player != null) minecraft.player.connection.sendCommand(command);
+    // ---------- Клавиши над слотом: 1-9 и Q / Keys over a slot: 1-9 and Q ----------
+
+    private double mouseX() {
+        return minecraft.mouseHandler.xpos() * minecraft.getWindow().getGuiScaledWidth() / (double) minecraft.getWindow().getScreenWidth();
     }
 
-    private GameType nextMode() {
-        GameType now = minecraft.gameMode.getPlayerMode();
-        for (int i = 0; i < MODES.length; i++) {
-            if (MODES[i] == now) return MODES[(i + 1) % MODES.length];
+    private double mouseY() {
+        return minecraft.mouseHandler.ypos() * minecraft.getWindow().getGuiScaledHeight() / (double) minecraft.getWindow().getScreenHeight();
+    }
+
+    private boolean handleSlotKeys(int key, int scanCode) {
+        for (int i = 0; i < 9; i++) {
+            if (minecraft.options.keyHotbarSlots[i].matches(key, scanCode)) return hotbarKey(i);
         }
-        return GameType.SURVIVAL;
+        if (minecraft.options.keyDrop.matches(key, scanCode)) return dropKey(hasControlDown());
+        return false;
+    }
+
+    // Над палитрой кладёт стек в слот хотбара, над слотом меняет местами с ним / Over the palette puts a stack into the hotbar slot, over a slot swaps with it
+    private boolean hotbarKey(int hotbarIndex) {
+        Slot target = menu.getSlot(36 + hotbarIndex);
+        if (grid != null && grid.isVisible() && grid.contains(mouseX(), mouseY())) {
+            int i = grid.indexAt(mouseX(), mouseY());
+            if (i < 0 || i >= items.size()) return false;
+            ItemStack template = items.get(i);
+            putSlot(target, withCount(template, template.getMaxStackSize()));
+            remember(template);
+            return true;
+        }
+        if (hoveredSlot != null && hoveredSlot != target) {
+            ItemStack a = hoveredSlot.getItem().copy();
+            ItemStack b = target.getItem().copy();
+            putSlot(hoveredSlot, b);
+            putSlot(target, a);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean dropKey(boolean whole) {
+        if (hoveredSlot == null || !hoveredSlot.hasItem()) return false;
+        ItemStack s = hoveredSlot.getItem();
+        int n = whole ? s.getCount() : 1;
+        ItemStack dropped = withCount(s, n);
+        putSlot(hoveredSlot, withCount(s, s.getCount() - n));
+        dropStack(dropped);
+        return true;
     }
 
     // ---------- Кадр и ввод / Frame and input ----------
@@ -462,17 +547,43 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
         host.prepare(mouseX, mouseY);
         host.renderContent(g, mouseX, mouseY, partialTick);
+        drawHover(g);
+    }
+    public int getSlotColor(int index) {
+        return 0;
+    }
+
+    private void drawHover(GuiGraphics g) {
+        Slot s = hoveredSlot;
+        if (s == null || !s.isActive()) return;
+        host.drawSlotHighlight(g, leftPos + s.x - 1, topPos + s.y - 1, 18, 18);
+    }
+
+    // Shift+клик по корзине очищает весь инвентарь, как в ванильном / Shift+click on the trash clears the whole inventory, as in vanilla
+    private void clearInventory() {
+        for (Slot slot : menu.slots) {
+            slot.set(ItemStack.EMPTY);
+            minecraft.gameMode.handleCreativeModeItemAdd(ItemStack.EMPTY, slot.index);
+        }
+        menu.setCarried(ItemStack.EMPTY);
     }
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {}
+
+    // Подсказка слота нашей темы / The slot tooltip in our theme
+    @Override
+    protected void renderTooltip(GuiGraphics g, int x, int y) {
+        if (host.hasModal() || !menu.getCarried().isEmpty() || hoveredSlot == null || !hoveredSlot.hasItem()) return;
+        host.drawTooltip(g, UiContext.platform().itemTooltip(McItem.of(hoveredSlot.getItem())), x, y);
+    }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         host.renderBackdrop(g);
         super.render(g, mouseX, mouseY, partialTick);
         host.renderTop(g, mouseX, mouseY, partialTick);
-        if (!host.hasModal()) renderTooltip(g, mouseX, mouseY);
+        renderTooltip(g, mouseX, mouseY);
     }
 
     // Клики по слотам обрабатываются здесь, а не ванильной логикой с пакетами контейнера
@@ -517,7 +628,9 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
 
     @Override
     public boolean keyPressed(int key, int scanCode, int modifiers) {
-        return host.keyPressed(key, scanCode, modifiers) || super.keyPressed(key, scanCode, modifiers);
+        if (host.keyPressed(key, scanCode, modifiers)) return true;
+        if (handleSlotKeys(key, scanCode)) return true;
+        return super.keyPressed(key, scanCode, modifiers);
     }
 
     @Override
@@ -543,29 +656,31 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
 
     // ---------- Виджеты окна / The window's widgets ----------
 
-    private IconButton iconButton(int x, int y, net.minecraft.world.item.Item icon,
-                                  Supplier<String> titleKey, Supplier<String> value, Runnable action) {
-        IconButton b = new IconButton(x, y, new ItemStack(icon), action);
-        Tooltips.attach(b, () -> new TooltipBubble(McText.of(Component.translatable(titleKey.get(), value.get()))));
-        return b;
-    }
-
-    // Ячейка вкладки: значок и название / A tab cell: the icon and the name
+    // Ячейка списка слева: вкладка или заголовок группы / A cell of the list on the left: a tab or a group header
     private static final class TabCell extends Widget {
         private final StyleRef<ButtonStyle> buttonStyle = new StyleRef<>(Styles.BUTTON);
         private final StyleRef<FieldStyle> fieldStyle = new StyleRef<>(Styles.FIELD);
         private McItem icon = null;
         private UiText name = UiText.literal("");
+        private boolean header = false;
         private boolean selected = false;
+        private boolean truncated = false;
 
         TabCell() {
             super(0, 0, 0, 0);
+            Tooltips.attach(this, () -> truncated ? new TooltipBubble(name) : null, 250L);
         }
 
-        void set(CreativeModeTab tab, boolean selected) {
-            this.icon = McItem.of(tab.getIconItem());
-            this.name = McText.of(tab.getDisplayName());
-            this.selected = selected;
+        void set(TabEntry entry, boolean selected) {
+            this.header = entry.isHeader();
+            this.selected = selected && !header;
+            this.icon = header ? null : McItem.of(entry.tab().getIconItem());
+            if (header) {
+                this.name = entry.header();
+            } else {
+                ResourceLocation id = BuiltInRegistries.CREATIVE_MODE_TAB.getKey(entry.tab());
+                this.name = NovaTexts.tabName(id == null ? "" : id.toString(), McText.of(entry.tab().getDisplayName()));
+            }
         }
 
         @Override
@@ -575,56 +690,57 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
             int ay = absY();
             int w = getWidth();
             int h = getHeight();
+            int textY = ay + (h - UiContext.platform().lineHeight()) / 2;
+            if (header) {
+                g.drawText(name, ax + 4, textY + 3, (b.text() & 0xFFFFFF) | 0x80000000, false);
+                return;
+            }
             if (selected) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), fieldStyle.get().selection());
             else if (isHovered()) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), b.hover());
             if (icon != null) g.drawItem(icon, ax + 3, ay + 2, false);
-            g.pushClip(ax + 22, ay, ax + w - 2, ay + h);
-            g.drawText(name, ax + 22, ay + (h - UiContext.platform().lineHeight()) / 2, b.text(), b.textShadow());
-            g.popClip();
+            UiText shown = UiContext.platform().ellipsize(name, w - 26);
+            truncated = shown != name;
+            g.drawText(shown, ax + 22, textY, b.text(), b.textShadow());
         }
     }
 
-    // Квадратная кнопка со значком предмета / A square button with an item icon
-    private static final class IconButton extends Widget {
-        private final StyleRef<ButtonStyle> style = new StyleRef<>(Styles.BUTTON);
-        private final McItem icon;
-        private final Runnable action;
-        private boolean pressed = false;
+    // Строка сохранённого хотбара: номер, девять предметов и кнопки «Сохранить» и «Загрузить»
+    // A saved hotbar row: the number, nine items and the "Save" and "Load" buttons
+    private static final class SavedHotbarRow extends Widget {
+        private int index = 0;
 
-        IconButton(int x, int y, ItemStack icon, Runnable action) {
-            super(x, y, 20, 20);
-            this.icon = McItem.of(icon);
-            this.action = action;
+        SavedHotbarRow() {
+            super(0, 0, 0, 0);
+            add(new ButtonWidget(0, 2, 34, 16, NovaTexts.SAVE, () -> hotbarAction(index, false, true)));
+            add(new ButtonWidget(0, 2, 34, 16, NovaTexts.LOAD, () -> hotbarAction(index, true, false)));
+        }
+
+        void set(int index) {
+            this.index = index;
+        }
+
+        @Override
+        protected void layoutChildren() {
+            getChildren().get(0).setPosition(getWidth() - 74, 2);
+            getChildren().get(1).setPosition(getWidth() - 38, 2);
+            super.layoutChildren();
         }
 
         @Override
         protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
-            ButtonStyle s = style.get();
-            boolean hovered = isHovered();
-            int bg = pressed && hovered ? s.pressed() : hovered ? s.hover() : s.normal();
-            Draw.box(g, absX(), absY(), getWidth(), getHeight(), s.radius(), bg, s.border(), 1);
-            g.drawItem(icon, absX() + 2, absY() + 2, false);
+            int ax = absX();
+            int ay = absY();
+            g.drawText(UiText.literal(String.valueOf(index + 1)), ax + 3, ay + 6, 0xFFFFFFFF, false);
+            var hotbar = Minecraft.getInstance().getHotbarManager().get(index);
+            for (int i = 0; i < 9; i++) {
+                ItemStack stack = hotbar.get(i);
+                if (!stack.isEmpty()) g.drawItem(McItem.of(stack), ax + 14 + i * 16, ay + 2, true);
+            }
         }
+    }
 
-        @Override
-        protected void onPointerDown(PointerEvent e) {
-            if (e.getButton() != MouseButton.LEFT) return;
-            pressed = true;
-            e.stopPropagation();
-        }
-
-        @Override
-        protected void onPointerUp(PointerEvent e) {
-            if (e.getButton() != MouseButton.LEFT || !pressed) return;
-            pressed = false;
-            if (contains(e.getX(), e.getY())) action.run();
-            e.stopPropagation();
-        }
-
-        @Override
-        protected void onPointerCancel(PointerEvent e) {
-            pressed = false;
-        }
+    private static void hotbarAction(int index, boolean load, boolean save) {
+        CreativeModeInventoryScreen.handleHotbarLoadOrSave(Minecraft.getInstance(), index, load, save);
     }
 
     // Корзина: клик с предметом на курсоре удаляет его / The trash: a click with an item on the cursor deletes it
@@ -642,13 +758,14 @@ public class NovaCreativeScreen extends AbstractContainerScreen<InventoryMenu> {
             float in = s.inset();
             g.fillRounded(absX() + in, absY() + in, absX() + 18 - in, absY() + 18 - in, s.radius(), s.background());
             g.strokeRounded(absX() + in, absY() + in, absX() + 18 - in, absY() + 18 - in, s.radius(), 1f, 0xFFB04040);
-            g.drawItem(McItem.of(new ItemStack(Items.BARRIER)), absX() + 1, absY() + 1, false);
+            Icons.TRASH.drawShadowed(g, absX() + 1, absY() + 1, isHovered() ? 0xFFFFFFFF : 0xFF909090);
         }
 
         @Override
         protected void onPointerDown(PointerEvent e) {
             if (e.getButton() != MouseButton.LEFT) return;
-            if (!menu.getCarried().isEmpty()) menu.setCarried(ItemStack.EMPTY);
+            if (Screen.hasShiftDown()) clearInventory();
+            else if (!menu.getCarried().isEmpty()) menu.setCarried(ItemStack.EMPTY);
             e.stopPropagation();
         }
     }

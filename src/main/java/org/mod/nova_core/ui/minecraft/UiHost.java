@@ -1,11 +1,14 @@
 package org.mod.nova_core.ui.minecraft;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.mod.nova_core.ui.animation.Animator;
 import org.mod.nova_core.ui.component.Widget;
 import org.mod.nova_core.ui.debug.DebugLayer;
 import org.mod.nova_core.ui.dnd.DragLayer;
+import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.input.KeyboardEvent;
 import org.mod.nova_core.ui.input.Keys;
 import org.mod.nova_core.ui.input.PointerEvent;
@@ -14,8 +17,10 @@ import org.mod.nova_core.ui.layout.SizeMode;
 import org.mod.nova_core.ui.navigation.Direction;
 import org.mod.nova_core.ui.navigation.FocusNavigator;
 import org.mod.nova_core.ui.overlay.OverlayHost;
+import org.mod.nova_core.ui.overlay.TooltipPainter;
 import org.mod.nova_core.ui.style.BackdropStyle;
 import org.mod.nova_core.ui.style.Gradient;
+import org.mod.nova_core.ui.style.SlotStyle;
 import org.mod.nova_core.ui.style.Styles;
 import org.mod.nova_core.ui.theme.ThemeManager;
 
@@ -144,26 +149,43 @@ public final class UiHost {
         drawNanos += System.nanoTime() - start;
     }
 
-    // Слои поверх всего: оверлеи, «призрак» переноса, инспектор. Сдвинуты по глубине выше предметов в слотах (z 150-200)
-    // и ниже ванильных подсказок (z 400)
-    // Layers above everything: overlays, the drag ghost, the inspector. Shifted in depth above the items in slots (z 150-200)
-    // and below vanilla tooltips (z 400)
+    // Слои сверху рисуются на очищенной глубине: поверх любых предметов и их цифр
+    // The top layers are drawn on a cleared depth: over any items and their counts
+    private static void clearDepth(GuiGraphics g) {
+        g.flush();
+        RenderSystem.clear(256, Minecraft.ON_OSX); // GL_DEPTH_BUFFER_BIT
+    }
+
     public void renderTop(GuiGraphics g, int mx, int my, float partialTick) {
         long start = System.nanoTime();
-        g.pose().pushPose();
-        g.pose().translate(0f, 0f, 300f);
+        clearDepth(g);
         graphics.begin(g);
         overlays.render(graphics, mx, my, partialTick);
         dragLayer.render(graphics, mx, my, partialTick);
         debug.render(graphics, mx, my, partialTick);
         graphics.end();
-        g.pose().popPose();
         drawNanos += System.nanoTime() - start;
 
         if (debug.isEnabled()) {
             debug.setStats(String.format(Locale.ROOT, "prep %.2f ms  draw %.2f ms  widgets %d",
                     prepNanos / 1_000_000.0, drawNanos / 1_000_000.0, countWidgets(treeRoot)));
         }
+    }
+
+    public void drawTooltip(GuiGraphics g, UiText text, int mx, int my) {
+        clearDepth(g);
+        graphics.begin(g);
+        TooltipPainter.draw(graphics, text, mx, my, width, height);
+        graphics.end();
+    }
+
+    // Подсветка слота цветом темы; рамка слота x, y, w, h / The slot highlight in the theme color; the slot frame x, y, w, h
+    public void drawSlotHighlight(GuiGraphics g, int x, int y, int w, int h) {
+        SlotStyle s = ThemeManager.current().get(Styles.SLOT);
+        float in = s.inset();
+        graphics.begin(g);
+        graphics.fillRounded(x + in, y + in, x + w - in, y + h - in, s.radius(), s.highlight());
+        graphics.end();
     }
 
     private static int countWidgets(Widget w) {
@@ -285,6 +307,12 @@ public final class UiHost {
 
     public boolean keyPressed(int key, int scanCode, int modifiers) {
         if (debug.handleKey(key, modifiers)) return true;
+        if (dragLayer.isKeyboardDrag() && dragLayer.handleKey(key)) return true;
+        // Ctrl+Space: перенос с клавиатуры с виджета в фокусе / Ctrl+Space: a keyboard drag from the focused widget
+        if (key == Keys.SPACE && (modifiers & Keys.MOD_CONTROL) != 0 && treeRoot.getFocusOwner() != null
+                && dragLayer.startKeyboardDrag(treeRoot.getFocusOwner())) {
+            return true;
+        }
         // Escape во время переноса отменяет перенос / Escape during a drag cancels the drag
         if (key == Keys.ESCAPE && dragLayer.isDragging()) {
             dragLayer.cancel();

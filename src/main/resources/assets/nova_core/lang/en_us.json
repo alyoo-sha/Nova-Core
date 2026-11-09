@@ -9,13 +9,48 @@
   "key.nova_core.open_collections_demo": "Open collections demo",
   "key.nova_core.open_dnd_demo": "Open drag and drop demo",
   "key.nova_core.open_form_demo": "Open form demo",
+  "key.nova_core.open_limits_demo": "Open limits demo",
+
   "menu.nova_core.workbench": "Workbench",
   "menu.nova_core.workbench.clear": "Clear",
+
   "nova_core.creative.search": "Search...",
   "nova_core.creative.hotbar": "Hotbar",
   "nova_core.creative.recent": "Recently used",
   "nova_core.creative.results": "Search results",
-  "nova_core.creative.time": "Set time: %s",
-  "nova_core.creative.gamemode": "Game mode: %s",
-  "nova_core.creative.weather": "Set weather: %s"
+  "nova_core.creative.minecraft": "Minecraft",
+  "nova_core.creative.other_mods": "Other mods",
+  "nova_core.creative.save": "Save",
+  "nova_core.creative.load": "Load",
+
+  "nova_core.world.time.day": "Day. Click to make it night",
+  "nova_core.world.time.night": "Night. Click to make it day",
+  "nova_core.world.mode.creative": "Creative mode. Click for survival",
+  "nova_core.world.mode.survival": "Survival mode. Click for creative",
+  "nova_core.world.weather.clear": "Clear. Click to start rain",
+  "nova_core.world.weather.rain": "Rain. Click to clear",
+
+  "nova_core.recipes.all": "All recipes",
+  "nova_core.recipes.locked": "Recipe not unlocked yet",
+  "nova_core.recipes.no_fit": "Does not fit the grid. A crafting table is needed",
+  "nova_core.recipes": "Recipes",
+  "nova_core.recipes.short": "Book",
+  "nova_core.recipes.craftable": "Craftable",
+
+  "nova_core.tab.minecraft.building_blocks": "Building Blocks",
+  "nova_core.tab.minecraft.colored_blocks": "Colored Blocks",
+  "nova_core.tab.minecraft.natural_blocks": "Natural Blocks",
+  "nova_core.tab.minecraft.functional_blocks": "Functional Blocks",
+  "nova_core.tab.minecraft.redstone_blocks": "Redstone Blocks",
+  "nova_core.tab.minecraft.tools_and_utilities": "Tools & Utilities",
+  "nova_core.tab.minecraft.combat": "Combat",
+  "nova_core.tab.minecraft.food_and_drinks": "Food & Drinks",
+  "nova_core.tab.minecraft.ingredients": "Ingredients",
+  "nova_core.tab.minecraft.spawn_eggs": "Spawn Eggs",
+  "nova_core.tab.minecraft.op_blocks": "Operator Utilities",
+  "nova_core.tab.minecraft.inventory": "Inventory",
+  "nova_core.tab.minecraft.hotbar": "Hotbars",
+
+  "nova_core.title.container.crafting": "Crafting",
+  "nova_core.title.container.inventory": "Inventory"
 }

@@ -1,5 +1,6 @@
 package org.mod.nova_core.menu.minecraft;
 
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -9,7 +10,9 @@ import org.mod.nova_core.ui.api.ArrowWidget;
 import org.mod.nova_core.ui.api.Panel;
 import org.mod.nova_core.ui.api.PlayerPreview;
 import org.mod.nova_core.ui.component.Widget;
+import org.mod.nova_core.ui.graphics.UiText;
 import org.mod.nova_core.ui.minecraft.McEffectsBar;
+import org.mod.nova_core.ui.minecraft.McWorldButtons;
 import org.mod.nova_core.ui.minecraft.container.SlotAccess;
 import org.mod.nova_core.ui.minecraft.vanilla.NovaVanillaScreen;
 
@@ -84,8 +87,26 @@ public class NovaInventoryScreen extends NovaVanillaScreen<InventoryMenu> {
         super.removed();
     }
 
+    // «Создание» над сеткой 2x2 / "Crafting" above the 2x2 grid
+    @Override
+    protected void buildTitle(Panel machinePanel, UiText title) {
+        machinePanel.add(label(title, 90, 101, 15));
+    }
+
     @Override
     protected void buildExtras(Widget root) {
         root.add(new McEffectsBar(leftPos, topPos + imageHeight + 4, imageWidth));
+        McWorldButtons.add(root, leftPos, topPos - 24);
+        installRecipeBook(root, menu);
+    }
+
+    // Режим сменили на творческий: открываем ванильный инвентарь, он сам откроет креатив, а подмена заменит его нашим
+    // The mode changed to creative: open the vanilla inventory, it opens creative itself and the replacement swaps in ours
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        if (minecraft != null && minecraft.player != null && minecraft.gameMode != null && minecraft.gameMode.hasInfiniteItems()) {
+            minecraft.setScreen(new InventoryScreen(minecraft.player));
+        }
     }
 }

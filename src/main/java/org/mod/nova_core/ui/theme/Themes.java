@@ -27,36 +27,17 @@ public final class Themes {
                     0x80608CD8, 0xFFFFFFFF,
                     4, 20, false, 4))
             .set(Styles.SLIDER, new SliderStyle(0x66141B28, 0xFF7AA2F0, 0xFFE8EEF8, 0xFFFFFFFF, 4, 8, 14, 2))
-            .set(Styles.SLOT, new SlotStyle(0x55141B28, 0x00000000, 0xFFD8B24A, 3, 0.5f))
+            .set(Styles.SLOT, new SlotStyle(0x55141B28, 0x00000000, 0xFFD8B24A, 3, 0.5f, 0x44A8C4F0))
             .set(Styles.BACKDROP, new BackdropStyle(
                     new Gradient(0xD00A1220, 0xD0101B30, 0xD0121A2C, 0xD00C1526)))
+            .set(Styles.FONT, new FontStyle("nova_core:ui"))
             .build();
 
     // Пустая тема: все стили берутся из значений по умолчанию их ключей / An empty theme: every style comes from its key's default
     public static final Theme DARK = Theme.builder("dark").build();
 
-    public static final Theme LIGHT = Theme.builder("light")
-            .set(Styles.PANEL, new PanelStyle(0xF0E8E8E8, 0xFF909090, 1))
-            .set(Styles.POPUP, new PanelStyle(0xFFEDEDED, 0xFF909090, 1))
-            .set(Styles.TEXT, new TextStyle(0xFF202020, false))
-            .set(Styles.BUTTON, new ButtonStyle(
-                    0xFFD0D0D0, 0xFFE4E4E4, 0xFFB8B8B8, 0xFFE8E8E8,
-                    0xFF808080, 0xFF000000,
-                    0xFF202020, 0xFF909090,
-                    8, 20, false))
-            .set(Styles.SCROLLBAR, new ScrollbarStyle(6, 0x30000000, 0xFF909090, 0xFF606060, 16))
-            .set(Styles.TOOLTIP, new TooltipStyle(0xF8F4F4F4, 0xFF808080, 0xFF202020, 5, 3, false))
-            .set(Styles.FIELD, new FieldStyle(
-                    0xFFFFFFFF, 0xFF808080, 0xFF000000,
-                    0xFF202020, 0xFF909090, 0xFF909090,
-                    0x803060C0, 0xFF000000,
-                    4, 20, false))
-            .set(Styles.SLIDER, new SliderStyle(0xFFB0B0B0, 0xFF3A78C8, 0xFF606060, 0xFF303030, 4, 8, 14))
-            .set(Styles.SLOT, new SlotStyle(0xFFC6C6C6, 0xFF8A8A8A, 0xFFB08020))
-            .build();
-
     // Порядок переключения / The switching order
-    public static final List<Theme> ALL = List.of(GLASS, DARK, LIGHT);
+    public static final List<Theme> ALL = List.of(GLASS, DARK);
 
     private Themes() {}
 
@@ -64,5 +45,13 @@ public final class Themes {
     public static Theme next(Theme current) {
         int i = ALL.indexOf(current);
         return ALL.get((i + 1) % ALL.size());
+    }
+
+    // Тема по имени; неизвестное имя даёт Glass / A theme by name; an unknown name gives Glass
+    public static Theme byName(String name) {
+        for (Theme t : ALL) {
+            if (t.name().equals(name)) return t;
+        }
+        return GLASS;
     }
 }

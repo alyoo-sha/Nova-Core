@@ -3,6 +3,9 @@ package org.mod.nova_core.ui.input;
 // Коды клавиш и модификаторов (как в GLFW) / Key and modifier codes (same as GLFW)
 public final class Keys {
     public static final int SPACE = 32;
+    public static final int H = 72;
+    public static final int LEFT_BRACKET = 91;
+    public static final int RIGHT_BRACKET = 93;
     public static final int ESCAPE = 256;
     public static final int ENTER = 257;
     public static final int TAB = 258;

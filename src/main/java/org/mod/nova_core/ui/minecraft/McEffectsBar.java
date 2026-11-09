@@ -87,19 +87,17 @@ public final class McEffectsBar extends Widget {
             if ((edge >>> 24) != 0) g.strokeRounded(ax, ay, ax + getWidth(), ay + getHeight(), radius, 1f, edge);
 
             g.drawImage(McSprite.effect(effect), ax + 5, ay + 3, 18, 18);
-            UiText time = UiText.literal(MobEffectUtil.formatDuration(inst, 1.0F));
+            UiText time = McText.of(MobEffectUtil.formatDuration(inst, 1.0F));
 //            UiText time = UiText.literal(String.valueOf(MobEffectUtil.formatDuration(inst, 1.0F)));
             g.drawText(time, ax + (getWidth() - UiContext.platform().textWidth(time)) / 2, ay + 22, 0xFFFFFFFF, false);
         }
 
         TooltipBubble tooltip() {
-            MobEffectInstance inst = instance();
-            if (inst == null) return null;
+            if (instance() == null) return null;
             MutableComponent text = Component.translatable(effect.getDescriptionId());
             if (amplifier >= 1 && amplifier <= 9) {
                 text.append(CommonComponents.SPACE).append(Component.translatable("enchantment.level." + (amplifier + 1)));
             }
-            text.append(Component.literal("\n" + MobEffectUtil.formatDuration(inst, 1.0F)));
             return new TooltipBubble(McText.of(text));
         }
     }

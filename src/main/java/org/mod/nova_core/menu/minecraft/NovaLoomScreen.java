@@ -46,8 +46,8 @@ public class NovaLoomScreen extends NovaVanillaScreen<LoomMenu> {
 
     @Override
     protected void buildMachine(Panel panel) {
-        ItemAdapter<Holder<BannerPattern>> adapter = TextCell.adapter(holder -> McText.of(
-                Component.translatable("block.minecraft.banner." + holder.value().getHashname() + "." + DyeColor.WHITE.getName())));
+        ItemAdapter<Holder<BannerPattern>> adapter = TextCell.adapter(holder -> McText.of(Component.translatable(
+                "block.minecraft.banner." + holder.unwrapKey().map(k -> k.location().toShortLanguageKey()).orElse("base") + ".white")));
         VirtualList<Holder<BannerPattern>> list = new VirtualList<>(56, 18, 96, 64, 14, patterns, adapter, selected);
         panel.add(list);
 
