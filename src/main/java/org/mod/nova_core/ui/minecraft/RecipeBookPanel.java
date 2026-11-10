@@ -7,6 +7,7 @@ import net.minecraft.client.RecipeBookCategories;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.recipebook.RecipeCollection;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.StackedContents;
 import net.minecraft.world.inventory.RecipeBookMenu;
@@ -92,6 +93,8 @@ public final class RecipeBookPanel extends Panel {
             categoryIcons.add(icons.isEmpty() ? ItemStack.EMPTY : icons.get(0));
             ItemCell tab = new ItemCell().setSlotBackground(true);
             tab.setBounds(8 + i * 22, 6, 20, 20);
+            String key = "nova_core.recipes.category." + categories.get(i).name().toLowerCase(Locale.ROOT);
+            tab.setTooltip(() -> I18n.exists(key) ? new TooltipBubble(NovaTexts.tr(key)) : null);
             int index = i;
             tab.addListener(EventType.POINTER_DOWN, e -> category.set(index));
             tabCells.add(tab);

@@ -1,11 +1,8 @@
 package org.mod.nova_core.ui.api;
 
 import org.mod.nova_core.ui.component.Widget;
-import org.mod.nova_core.ui.context.UiContext;
 import org.mod.nova_core.ui.graphics.UiGraphics;
 import org.mod.nova_core.ui.graphics.UiItem;
-import org.mod.nova_core.ui.overlay.TooltipBubble;
-import org.mod.nova_core.ui.overlay.Tooltips;
 import org.mod.nova_core.ui.style.ButtonStyle;
 import org.mod.nova_core.ui.style.FieldStyle;
 import org.mod.nova_core.ui.style.SlotStyle;
@@ -13,8 +10,8 @@ import org.mod.nova_core.ui.style.Styles;
 import org.mod.nova_core.ui.theme.StyleRef;
 import org.mod.nova_core.ui.theme.ThemeManager;
 
-// Ячейка с предметом по центру: подсветка, фон слота, подсказка предмета нашей темы. Размер задаёт список или сетка
-// A cell with an item in the middle: highlight, a slot background, the item tooltip in our theme. The size is set by the list or grid
+// Ячейка с предметом по центру: подсветка при наведении и выборе, подсказка предмета. Размер задаёт список или сетка
+// A cell with an item in the middle: hover and selection highlight, the item tooltip. The size is set by the list or grid
 public class ItemCell extends Widget {
     private final StyleRef<ButtonStyle> buttonStyle = new StyleRef<>(Styles.BUTTON);
     private final StyleRef<FieldStyle> fieldStyle = new StyleRef<>(Styles.FIELD);
@@ -26,9 +23,6 @@ public class ItemCell extends Widget {
 
     public ItemCell() {
         super(0, 0, 0, 0);
-        // Ячейки переиспользуются, поэтому подсказка читает текущий предмет в момент показа
-        // Cells are reused, so the tooltip reads the current item at show time
-        Tooltips.attach(this, this::tooltip, 0L);
     }
 
     public ItemCell set(UiItem item, boolean selected) {
@@ -48,11 +42,6 @@ public class ItemCell extends Widget {
         return this;
     }
 
-    private TooltipBubble tooltip() {
-        if (item == null || item.isEmpty()) return null;
-        return new TooltipBubble(UiContext.platform().itemTooltip(item)).setMaxWidth(300);
-    }
-
     @Override
     protected void renderSelf(UiGraphics g, int mouseX, int mouseY, float partialTick) {
         ButtonStyle b = buttonStyle.get();
@@ -66,10 +55,16 @@ public class ItemCell extends Widget {
             float in = ss.inset();
             g.fillRounded(ax + in, ay + in, ax + w - in, ay + h - in, ss.radius(), ss.background());
         }
+
         if (selected) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), fieldStyle.get().selection());
-        else if (isHovered()) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(),
-                slotBackground ? ThemeManager.current().get(Styles.SLOT).highlight() : b.hover());
+        else if (isHovered()) g.fillRounded(ax, ay, ax + w, ay + h, b.radius(), b.hover());
 
         if (item != null && !item.isEmpty()) g.drawItem(item, ax + (w - 16) / 2, ay + (h - 16) / 2, decorations);
+    }
+
+    // Подсказка рисуется поверх всего, где бы ни лежала ячейка / The tooltip is drawn above everything, wherever the cell sits
+    @Override
+    protected void renderOverlay(UiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (isHovered() && item != null && !item.isEmpty()) g.drawItemTooltip(item, mouseX, mouseY);
     }
 }
