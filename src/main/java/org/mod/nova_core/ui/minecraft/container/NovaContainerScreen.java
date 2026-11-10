@@ -138,6 +138,7 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         host.prepare(mouseX, mouseY);
         host.renderContent(g, mouseX, mouseY, partialTick);
         drawHover(g);
+        drawModuleHighlights(g);
     }
 
     // Ванильная подсветка гасится (если у вашей версии Forge есть getSlotColor), наша рисуется под предметами
@@ -152,6 +153,20 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         int offset = isLargeSlot(s) ? 5 : 1;
         int size = isLargeSlot(s) ? 26 : 18;
         host.drawSlotHighlight(g, leftPos + s.x - offset, topPos + s.y - offset, size, size);
+    }
+
+    // Слоты, которые просят подсветить модули (например, выбранные для деления поровну), цветом темы под предметами
+    // Slots that modules ask to highlight (e.g. picked for an even split), in the theme color under the items
+    private void drawModuleHighlights(GuiGraphics g) {
+        if (host.hasModal()) return;
+        InventoryInteractions.collectHighlights(this, id -> {
+            if (id < 0 || id >= menu.slots.size()) return;
+            Slot s = menu.slots.get(id);
+            if (!s.isActive()) return;
+            int offset = isLargeSlot(s) ? 5 : 1;
+            int size = isLargeSlot(s) ? 26 : 18;
+            host.drawSlotHighlight(g, leftPos + s.x - offset, topPos + s.y - offset, size, size);
+        });
     }
 
     // Нужен кнопке рецептов / Needed by the recipe book button
@@ -192,14 +207,13 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         return allowsInventoryInteractions() && !host.hasModal() && host.overlays().openOverlays().isEmpty();
     }
 
-    // Слот под точкой экрана или null; та же геометрия, что у ванильного hit-теста (16x16 плюс рамка в 1 px)
-    // The slot at a screen point or null; the same geometry as the vanilla hit test (16x16 plus a 1 px border)
+    // Слот под точкой экрана или null; та же геометрия и порядок, что у ванильного hit-теста (16x16 плюс рамка в 1 px)
+    // The slot at a screen point or null; the same geometry and order as the vanilla hit test (16x16 plus a 1 px border)
     @Nullable
     public final Slot slotAt(double mx, double my) {
         double px = mx - leftPos;
         double py = my - topPos;
-        for (int i = menu.slots.size() - 1; i >= 0; i--) {
-            Slot s = menu.slots.get(i);
+        for (Slot s : menu.slots) {
             if (s.isActive() && px >= s.x - 1 && px < s.x + 17 && py >= s.y - 1 && py < s.y + 17) return s;
         }
         return null;

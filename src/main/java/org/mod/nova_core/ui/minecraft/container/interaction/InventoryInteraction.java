@@ -4,6 +4,8 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.List;
 
 // Точка расширения для модулей работы с инвентарём. Все методы вызываются на клиентском потоке.
 // slot равен null, если курсор не над слотом. Возврат true означает «событие поглощено»: ванильная обработка пропускается.
@@ -28,4 +30,10 @@ public interface InventoryInteraction {
     default boolean onSlotRelease(AbstractContainerScreen<?> screen, @Nullable Slot slot, InventoryMouseEvent event) { return false; }
 
     default boolean onSlotScroll(AbstractContainerScreen<?> screen, @Nullable Slot slot, InventoryMouseEvent event) { return false; }
+
+    // Номера слотов меню, которые модуль просит подсветить (например, выбранные для деления поровну).
+    // Окна Nova рисуют их цветом темы под предметами
+    // Menu slot numbers the module asks to highlight (e.g. picked for an even split).
+    // Nova windows draw them in the theme color under the items
+    default Collection<Integer> highlightedSlots(AbstractContainerScreen<?> screen) { return List.of(); }
 }

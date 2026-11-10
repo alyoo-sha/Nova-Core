@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.IntConsumer;
 
 // Реестр модулей работы с инвентарём; его опрашивают экраны на базе NovaContainerScreen
 // A registry of inventory-interaction modules; screens based on NovaContainerScreen query it
@@ -63,5 +64,13 @@ public final class InventoryInteractions {
             if (i.appliesTo(screen) && i.onSlotRelease(screen, slot, event)) consumed = true;
         }
         return consumed;
+    }
+
+    // Собирает номера слотов, которые модули просят подсветить / Collects the slot numbers that modules ask to highlight
+    public static void collectHighlights(AbstractContainerScreen<?> screen, IntConsumer sink) {
+        for (InventoryInteraction i : ENTRIES) {
+            if (!i.appliesTo(screen)) continue;
+            for (int id : i.highlightedSlots(screen)) sink.accept(id);
+        }
     }
 }
