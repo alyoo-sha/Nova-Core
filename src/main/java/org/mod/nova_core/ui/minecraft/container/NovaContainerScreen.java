@@ -1,11 +1,12 @@
 package org.mod.nova_core.ui.minecraft.container;
 
-import net.minecraft.ChatFormatting;
+import javax.annotation.Nullable;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.RecipeBookMenu;
 import net.minecraft.world.inventory.ResultSlot;
 import net.minecraft.world.inventory.Slot;
 import org.mod.nova_core.menu.MachineLayout;
@@ -14,8 +15,14 @@ import org.mod.nova_core.ui.api.Panel;
 import org.mod.nova_core.ui.api.SlotFrame;
 import org.mod.nova_core.ui.api.TextWidget;
 import org.mod.nova_core.ui.component.Widget;
-import org.mod.nova_core.ui.minecraft.McText;
+import org.mod.nova_core.ui.context.UiContext;
+import org.mod.nova_core.ui.graphics.UiText;
+import org.mod.nova_core.ui.minecraft.McItem;
+import org.mod.nova_core.ui.minecraft.NovaTexts;
+import org.mod.nova_core.ui.minecraft.RecipeBookPanel;
 import org.mod.nova_core.ui.minecraft.UiHost;
+import org.mod.nova_core.ui.minecraft.container.interaction.InventoryInteractions;
+import org.mod.nova_core.ui.minecraft.container.interaction.InventoryMouseEvent;
 import org.mod.nova_core.ui.style.Styles;
 
 // Экран контейнера на Nova Core: две отдельные панели вместо ванильной текстуры. Работает с любым меню,
@@ -70,8 +77,8 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         machinePanel.setDebugName("machine");
         inventoryPanel.setDebugName("inventory");
 
-        machinePanel.add(new TextWidget(8, 6, McText.of(title.copy().withStyle(ChatFormatting.BOLD))));
-        inventoryPanel.add(new TextWidget(8, 6, McText.of(playerInventoryTitle.copy().withStyle(ChatFormatting.BOLD))));
+        buildTitle(machinePanel, NovaTexts.titleFor(title));
+        inventoryPanel.add(label(NovaTexts.titleFor(playerInventoryTitle), MachineLayout.INVENTORY_WIDTH - 16, 8, 6));
         root.add(machinePanel);
         root.add(inventoryPanel);
 
@@ -88,6 +95,35 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         buildMachine(machinePanel);
     }
 
+    // Жирная подпись, которая обрезается «…» и раскрывается подсказкой / A bold label that is cut with "…" and revealed by a tooltip
+    protected final TextWidget label(UiText text, int maxWidth, int x, int y) {
+        TextWidget widget = new TextWidget(x, y, maxWidth, 9, NovaTexts.bold(text));
+        widget.setEllipsize(true);
+        return widget;
+    }
+
+    // Куда ставить заголовок; потомки могут переопределить, например над нужной группой слотов
+    // Where to put the title; subclasses can override, e.g. above a particular slot group
+    protected void buildTitle(Panel machinePanel, UiText title) {
+        machinePanel.add(label(title, layout.machineWidth() - 16, 8, 6));
+    }
+
+    private RecipeBookPanel recipeBook = null;
+
+    // Книга рецептов для окон с RecipeBookMenu; вызывайте из buildExtras / A recipe book for windows with a RecipeBookMenu; call it from buildExtras
+    protected final void installRecipeBook(Widget root, RecipeBookMenu<?> bookMenu) {
+        recipeBook = RecipeBookPanel.install(root, machinePanel, bookMenu, leftPos, topPos, imageWidth, imageHeight);
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        // Раз в полсекунды: в инвентаре могли появиться нужные предметы / Every half second: the needed items may have appeared in the inventory
+        if (recipeBook != null && minecraft != null && minecraft.player != null && minecraft.player.tickCount % 10 == 0) {
+            recipeBook.refresh();
+        }
+    }
+
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         host.renderBackdrop(g);
@@ -101,11 +137,38 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
     protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
         host.prepare(mouseX, mouseY);
         host.renderContent(g, mouseX, mouseY, partialTick);
+        drawHover(g);
+    }
+
+    // Ванильная подсветка гасится (если у вашей версии Forge есть getSlotColor), наша рисуется под предметами
+    // The vanilla highlight is switched off (if your Forge version has getSlotColor), ours is drawn under the items
+    public int getSlotColor(int index) {
+        return 0;
+    }
+
+    private void drawHover(GuiGraphics g) {
+        Slot s = hoveredSlot;
+        if (s == null || !s.isActive() || host.hasModal()) return;
+        int offset = isLargeSlot(s) ? 5 : 1;
+        int size = isLargeSlot(s) ? 26 : 18;
+        host.drawSlotHighlight(g, leftPos + s.x - offset, topPos + s.y - offset, size, size);
+    }
+
+    // Нужен кнопке рецептов / Needed by the recipe book button
+    protected final Panel machinePanel() {
+        return machinePanel;
     }
 
     // Подписи рисуют виджеты / The labels are drawn by widgets
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {}
+
+    // Подсказка слота нашей темы вместо ванильной / The slot tooltip in our theme instead of the vanilla one
+    @Override
+    protected void renderTooltip(GuiGraphics g, int x, int y) {
+        if (host.hasModal() || !menu.getCarried().isEmpty() || hoveredSlot == null || !hoveredSlot.hasItem()) return;
+        host.drawTooltip(g, UiContext.platform().itemTooltip(McItem.of(hoveredSlot.getItem())), x, y);
+    }
 
     // Клик мимо обеих панелей выбрасывает предмет с курсора; промежуток между панелями считается «внутри»
     // A click outside both panels throws the carried item; the gap between the panels counts as "inside"
@@ -117,6 +180,31 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
         return !inPanels && !inGap;
     }
 
+    // Отключение модулей работы с инвентарём для конкретного окна; потомки могут переопределить
+    // Opt-out of inventory-interaction modules for a particular window; subclasses may override
+    protected boolean allowsInventoryInteractions() {
+        return true;
+    }
+
+    // Модули работают, только если окно разрешило их и нет ни одного открытого оверлея (попап, модальное окно, подсказка)
+    // Modules work only if the window allows them and no overlay is open (popup, modal, tooltip)
+    private boolean interactionsReady() {
+        return allowsInventoryInteractions() && !host.hasModal() && host.overlays().openOverlays().isEmpty();
+    }
+
+    // Слот под точкой экрана или null; та же геометрия, что у ванильного hit-теста (16x16 плюс рамка в 1 px)
+    // The slot at a screen point or null; the same geometry as the vanilla hit test (16x16 plus a 1 px border)
+    @Nullable
+    public final Slot slotAt(double mx, double my) {
+        double px = mx - leftPos;
+        double py = my - topPos;
+        for (int i = menu.slots.size() - 1; i >= 0; i--) {
+            Slot s = menu.slots.get(i);
+            if (s.isActive() && px >= s.x - 1 && px < s.x + 17 && py >= s.y - 1 && py < s.y + 17) return s;
+        }
+        return null;
+    }
+
     @Override
     public void removed() {
         host.removed();
@@ -125,17 +213,26 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        return host.mouseClicked(mx, my, button) || super.mouseClicked(mx, my, button);
+        if (host.mouseClicked(mx, my, button)) return true;
+        if (interactionsReady() && InventoryInteractions.press(this, slotAt(mx, my), InventoryMouseEvent.press(mx, my, button))) return true;
+        return super.mouseClicked(mx, my, button);
     }
 
     @Override
     public boolean mouseReleased(double mx, double my, int button) {
-        return host.mouseReleased(mx, my, button) || super.mouseReleased(mx, my, button);
+        boolean hostHandled = host.mouseReleased(mx, my, button);
+        // Отпускание доходит до модулей всегда, даже если открыт оверлей: жест обязан завершиться
+        // The release always reaches the modules, even with an overlay open: the gesture must finish
+        boolean intercepted = allowsInventoryInteractions()
+                && InventoryInteractions.release(this, slotAt(mx, my), InventoryMouseEvent.release(mx, my, button));
+        return hostHandled || intercepted || super.mouseReleased(mx, my, button);
     }
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
-        return host.mouseDragged(mx, my, button, dx, dy) || super.mouseDragged(mx, my, button, dx, dy);
+        if (host.mouseDragged(mx, my, button, dx, dy)) return true;
+        if (interactionsReady() && InventoryInteractions.drag(this, slotAt(mx, my), InventoryMouseEvent.drag(mx, my, button, dx, dy))) return true;
+        return super.mouseDragged(mx, my, button, dx, dy);
     }
 
     @Override
@@ -146,7 +243,9 @@ public abstract class NovaContainerScreen<M extends AbstractContainerMenu> exten
 
     @Override
     public boolean mouseScrolled(double mx, double my, double delta) {
-        return host.mouseScrolled(mx, my, delta) || super.mouseScrolled(mx, my, delta);
+        if (host.mouseScrolled(mx, my, delta)) return true;
+        if (interactionsReady() && InventoryInteractions.scroll(this, slotAt(mx, my), InventoryMouseEvent.scroll(mx, my, delta))) return true;
+        return super.mouseScrolled(mx, my, delta);
     }
 
     @Override
